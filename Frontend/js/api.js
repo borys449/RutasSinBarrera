@@ -1,242 +1,339 @@
 /**
- * RutaSinBarreras — Cliente de Integración API y Respaldo Offline
- * Campus Matriz ULEAM Manta
+ * ==========================================================================
+ * Rutas Sin Barrera - Capa de Servicio API (api.js)
+ * Manejo de contratos REST, peticiones HTTP, estados de carga,
+ * manejo de errores y contingencia offline / local mock.
+ * ==========================================================================
  */
 
-const API_BASE_URL = "http://127.0.0.1:8000/api";
+const ApiService = (function () {
+  // Configuración base de la API del Backend (FastAPI / Flask)
+  const API_CONFIG = {
+    baseUrl: 'http://localhost:8000/api',
+    timeoutMs: 3500,
+    isOfflineMode: false
+  };
 
-// Base de datos de respaldo offline (Fallback) conforme a la Tabla de Referencia del Campus ULEAM
-const FALLBACK_LUGARES = [
-  { id: "uleam_centro", nombre: "Campus Matriz ULEAM (Centro)", tipo: "punto_interes", lat: -0.9538, lng: -80.7448 },
-  { id: "puerta_1", nombre: "Puerta 1 - Ingreso Principal", tipo: "puerta", lat: -0.9521, lng: -80.7456 },
-  { id: "puerta_2", nombre: "Puerta 2 - Acceso Av. Circunvalación", tipo: "puerta", lat: -0.9542, lng: -80.7463 },
-  { id: "puerta_3", nombre: "Tercera Puerta ULEAM", tipo: "puerta", lat: -0.9516, lng: -80.7442 },
-  { id: "fac_informatica", nombre: "Facultad de Ciencias Informáticas (FACCI)", tipo: "facultad", lat: -0.9531, lng: -80.7446 },
-  { id: "fac_industrial", nombre: "Facultad de Ingeniería Industrial", tipo: "facultad", lat: -0.9523, lng: -80.7449 },
-  { id: "fac_educacion", nombre: "Facultad de Ciencias de la Educación", tipo: "facultad", lat: -0.9535, lng: -80.7442 },
-  { id: "fac_odontologia", nombre: "Facultad de Ciencias de la Salud - Odontología", tipo: "facultad", lat: -0.9536, lng: -80.7438 },
-  { id: "fac_derecho", nombre: "Facultad de Ciencias Sociales, Derecho y Bienestar", tipo: "facultad", lat: -0.9534, lng: -80.7445 },
-  { id: "fac_turismo", nombre: "Facultad de Turismo y Hotelería", tipo: "facultad", lat: -0.9544, lng: -80.7456 },
-  { id: "fac_medicina", nombre: "Facultad de Ciencias Médicas", tipo: "facultad", lat: -0.9549, lng: -80.7458 },
-  { id: "punto_encuentro_1", nombre: "Explanada Trabajo Social (Punto Encuentro 1)", tipo: "punto_interes", lat: -0.9528, lng: -80.7449 },
-  { id: "punto_encuentro_2", nombre: "Canchas Múltiples (Punto Encuentro 2)", tipo: "punto_interes", lat: -0.9546, lng: -80.7436 },
-  { id: "punto_encuentro_3", nombre: "Parque Comunicación (Punto Encuentro 3)", tipo: "punto_interes", lat: -0.9539, lng: -80.7457 },
-  { id: "cac_uleam", nombre: "Centro de Atención Ciudadana (C.A.C.)", tipo: "punto_interes", lat: -0.9527, lng: -80.7453 }
-];
+  /**
+   * Pines de referencia del campus. Las ubicaciones de Google Maps/OSM
+   * son aproximadas y todavía requieren validación en campo.
+   */
+  const CAMPUS_MOCK_DATA = {
+    lugares: [
+      {
+        id: "uleam_centro",
+        nombre: "Campus Matriz ULEAM (punto de referencia)",
+        categoria: "campus",
+        descripcion: "Centro aproximado proporcionado por el usuario; no representa un edificio específico.",
+        coordenadas: [-0.9527, -80.7452]
+      },
+      {
+        id: "puerta_1",
+        nombre: "Puerta 1 - Ingreso principal",
+        categoria: "acceso",
+        descripcion: "Pin de Google Maps; condiciones de acceso por verificar en sitio.",
+        coordenadas: [-0.9549122, -80.7460422]
+      },
+      {
+        id: "puerta_2",
+        nombre: "Puerta 2 ULEAM",
+        categoria: "acceso",
+        descripcion: "Pin de Google Maps; condiciones de acceso por verificar en sitio.",
+        coordenadas: [-0.9530482, -80.7436759]
+      },
+      {
+        id: "puerta_3",
+        nombre: "Tercera puerta ULEAM",
+        categoria: "acceso",
+        descripcion: "Pin de Google Maps; condiciones de acceso por verificar en sitio.",
+        coordenadas: [-0.9506268, -80.7461297]
+      },
+      {
+        id: "puerta_4",
+        nombre: "Puerta 4",
+        categoria: "acceso",
+        descripcion: "Pin de OpenStreetMap; confirmar que corresponda a una entrada habilitada y verificar condiciones en sitio.",
+        coordenadas: [-0.9548909, -80.7441844]
+      },
+      {
+        id: "fac_informatica",
+        nombre: "Facultad de Ciencias Informáticas (FACCI)",
+        categoria: "facultad",
+        descripcion: "Pin de Google Maps; ubicación del edificio por verificar en sitio.",
+        coordenadas: [-0.952382, -80.7447735]
+      },
+      {
+        id: "fac_industrial",
+        nombre: "Facultad de Ingeniería Industrial",
+        categoria: "facultad",
+        descripcion: "Pin de Google Maps; ubicación del edificio por verificar en sitio.",
+        coordenadas: [-0.9512028, -80.7460773]
+      },
+      {
+        id: "fac_educacion",
+        nombre: "Facultad de Ciencias de la Educación",
+        categoria: "facultad",
+        descripcion: "Pin de Google Maps; ubicación del edificio por verificar en sitio.",
+        coordenadas: [-0.9542543, -80.7461308]
+      },
+      {
+        id: "fac_odontologia",
+        nombre: "Facultad de Ciencias de la Salud - Odontología",
+        categoria: "facultad",
+        descripcion: "Pin de Google Maps; ubicación del edificio por verificar en sitio.",
+        coordenadas: [-0.9529857, -80.7434419]
+      },
+      {
+        id: "fac_derecho",
+        nombre: "Facultad de Ciencias Sociales, Derecho y Bienestar",
+        categoria: "facultad",
+        descripcion: "Pin de Google Maps; ubicación del edificio por verificar en sitio.",
+        coordenadas: [-0.9530813, -80.7462284]
+      },
+      {
+        id: "fac_turismo",
+        nombre: "Facultad de Turismo y Hotelería",
+        categoria: "facultad",
+        descripcion: "Pin de Google Maps; ubicación del edificio por verificar en sitio.",
+        coordenadas: [-0.9537699, -80.7471212]
+      },
+      {
+        id: "fac_medicina",
+        nombre: "Facultad de Ciencias Médicas",
+        categoria: "facultad",
+        descripcion: "Pin de Google Maps; ubicación del edificio por verificar en sitio.",
+        coordenadas: [-0.9517139, -80.7439939]
+      },
+      {
+        id: "biblioteca_economia",
+        nombre: "Biblioteca de la Facultad de Economía",
+        categoria: "biblioteca",
+        descripcion: "Pin de Google Maps; confirmar que sea la biblioteca buscada y verificar en sitio.",
+        coordenadas: [-0.9540532, -80.74581]
+      },
+      {
+        id: "biblioteca_trabajo_social",
+        nombre: "Biblioteca de Trabajo Social",
+        categoria: "biblioteca",
+        descripcion: "Pin de Google Maps; confirmar que sea la biblioteca buscada y verificar en sitio.",
+        coordenadas: [-0.950773, -80.7454928]
+      },
+      {
+        id: "biblioteca_derecho",
+        nombre: "Biblioteca de Derecho",
+        categoria: "biblioteca",
+        descripcion: "Pin de Google Maps; confirmar que sea la biblioteca buscada y verificar en sitio.",
+        coordenadas: [-0.9531017, -80.7460541]
+      },
+      {
+        id: "biblioteca_ingenieria",
+        nombre: "Biblioteca de Ingeniería",
+        categoria: "biblioteca",
+        descripcion: "Pin de Google Maps; confirmar que sea la biblioteca buscada y verificar en sitio.",
+        coordenadas: [-0.9518982, -80.7463366]
+      },
+      {
+        id: "biblioteca_arquitectura",
+        nombre: "Biblioteca de Arquitectura",
+        categoria: "biblioteca",
+        descripcion: "Pin de Google Maps; confirmar que sea la biblioteca buscada y verificar en sitio.",
+        coordenadas: [-0.952776, -80.7462534]
+      }
+    ],
 
-let FALLBACK_OBSTACULOS = [
-  {
-    id: "obs_1",
-    tipo: "escaleras",
-    mensaje: "No apto por aquí: escaleras sin rampa en acceso central",
-    lat: -0.9536,
-    lng: -80.7446,
-    nivel_confianza: "Alto (95%)",
-    ultima_actualizacion: "2026-11-18"
-  },
-  {
-    id: "obs_2",
-    tipo: "loma_empinada",
-    mensaje: "Pendiente pronunciada superior al 12% hacia el pabellón de Medicina",
-    lat: -0.9546,
-    lng: -80.7460,
-    nivel_confianza: "Medio (88%)",
-    ultima_actualizacion: "2026-11-18"
-  },
-  {
-    id: "obs_3",
-    tipo: "bache",
-    mensaje: "Adoquines levantados y bache en sendero peatonal hacia el C.A.C.",
-    lat: -0.9526,
-    lng: -80.7451,
-    nivel_confianza: "Alto (91%)",
-    ultima_actualizacion: "2026-11-18"
-  },
-  {
-    id: "obs_4",
-    tipo: "rampa",
-    mensaje: "Rampa habilitada con pendiente suave y barandilla doble altura",
-    lat: -0.9529,
-    lng: -80.7451,
-    nivel_confianza: "Alto (98%)",
-    ultima_actualizacion: "2026-11-18"
-  },
-  {
-    id: "obs_5",
-    tipo: "rampa",
-    mensaje: "Rampa de acceso lateral a FACCI con piso antideslizante",
-    lat: -0.9532,
-    lng: -80.7447,
-    nivel_confianza: "Alto (96%)",
-    ultima_actualizacion: "2026-11-18"
-  },
-  {
-    id: "obs_6",
-    tipo: "escaleras",
-    mensaje: "Gradería de 8 escalones sin banda podotáctil de aviso",
-    lat: -0.9533,
-    lng: -80.7441,
-    nivel_confianza: "Alto (93%)",
-    ultima_actualizacion: "2026-11-18"
-  }
-];
+    reportes: []
+  };
 
-/**
- * Consulta la lista de lugares del campus ULEAM.
- * @param {string|null} tipo - Filtro opcional: 'puerta', 'facultad', 'punto_interes'
- * @returns {Promise<Array>} Lista de lugares
- */
-async function getLugares(tipo = null) {
-  try {
-    const url = tipo ? `${API_BASE_URL}/lugares?tipo=${encodeURIComponent(tipo)}` : `${API_BASE_URL}/lugares`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (error) {
-    console.warn("[API] Servidor no disponible, usando fallback local para lugares:", error.message);
-    if (tipo) {
-      return FALLBACK_LUGARES.filter(l => l.tipo.toLowerCase() === tipo.toLowerCase());
+  /**
+   * Helper privado para peticiones con timeout y control de errores.
+   */
+  async function fetchWithTimeout(resource, options = {}) {
+    const { timeout = API_CONFIG.timeoutMs } = options;
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(resource, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(id);
+      return response;
+    } catch (error) {
+      clearTimeout(id);
+      throw error;
     }
-    return FALLBACK_LUGARES;
   }
-}
 
-/**
- * Calcula la ruta accesible entre origen y destino según el perfil de accesibilidad.
- * @param {Object} origen - { id, lat, lng }
- * @param {Object} destino - { id, lat, lng }
- * @param {string} perfil - 'silla_ruedas' | 'discapacidad_visual' | 'muletas'
- * @returns {Promise<Object>} Datos de ruta calculada
- */
-async function calcularRuta(origen, destino, perfil = "silla_ruedas") {
-  try {
-    const res = await fetch(`${API_BASE_URL}/rutas/calcular`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ origen, destino, perfil })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (error) {
-    console.warn("[API] Servidor no disponible, generando ruta simulada fallback:", error.message);
-    return generarRutaFallback(origen, destino, perfil);
+  /**
+   * Obtiene la lista de lugares accesibles.
+   */
+  async function getLugares() {
+    try {
+      const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/lugares`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
+      API_CONFIG.isOfflineMode = false;
+      return data;
+    } catch (err) {
+      console.warn("Aviso: Servidor API no disponible. Utilizando datos del campus en modo offline.", err.message);
+      API_CONFIG.isOfflineMode = true;
+      return CAMPUS_MOCK_DATA.lugares;
+    }
   }
-}
 
-/**
- * Consulta la lista de obstáculos vigentes.
- * @returns {Promise<Array>}
- */
-async function getObstaculos() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/obstaculos`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (error) {
-    console.warn("[API] Servidor no disponible, usando fallback local de obstáculos:", error.message);
-    return FALLBACK_OBSTACULOS;
-  }
-}
-
-/**
- * Registra un nuevo obstáculo o reporte comunitario.
- * @param {Object} obstaculo - { tipo, mensaje, lat, lng, nivel_confianza? }
- * @returns {Promise<Object>} Obstáculo creado con su ID
- */
-async function reportarObstaculo(obstaculo) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/obstaculos`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(obstaculo)
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (error) {
-    console.warn("[API] Servidor no disponible, persistiendo localmente en memoria fallback:", error.message);
-    const nuevoObs = {
-      id: `obs_${FALLBACK_OBSTACULOS.length + 1}`,
-      tipo: obstaculo.tipo,
-      mensaje: obstaculo.mensaje,
-      lat: obstaculo.lat,
-      lng: obstaculo.lng,
-      nivel_confianza: obstaculo.nivel_confianza || "Medio (85%)",
-      ultima_actualizacion: new Date().toISOString().split("T")[0]
+  /**
+   * Solicita al backend una ruta accesible considerando perfil y obstáculos.
+   * No genera trazados de demostración cuando el servicio no está disponible.
+   */
+  async function calcularRuta(origenId, destinoId, perfilId) {
+    const payload = {
+      origen_id: origenId,
+      destino_id: destinoId,
+      perfil_movilidad: perfilId
     };
-    FALLBACK_OBSTACULOS.push(nuevoObs);
-    return nuevoObs;
-  }
-}
 
-/**
- * Generador offline de ruta para fallback
- */
-function generarRutaFallback(origen, destino, perfil) {
-  const oLat = origen.lat;
-  const oLng = origen.lng;
-  const dLat = destino.lat;
-  const dLng = destino.lng;
-
-  const midLat = Number(((oLat + dLat) / 2).toFixed(6));
-  const midLng = Number(((oLng + dLng) / 2).toFixed(6));
-
-  const coordenadas = [
-    [oLat, oLng],
-    [midLat, Number((midLng - 0.0001).toFixed(6))],
-    [dLat, dLng]
-  ];
-
-  let explicacion = "";
-  let obstaculosEvitados = [];
-  let alertas = [
-    {
-      lat: -0.9529,
-      lng: -80.7451,
-      tipo: "rampa",
-      mensaje: "Rampa habilitada con pendiente suave"
+    try {
+      const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/rutas/calcular`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
+      API_CONFIG.isOfflineMode = false;
+      return data;
+    } catch (err) {
+      console.warn("Aviso: No se pudo conectar con el servicio de rutas.", err.message);
+      API_CONFIG.isOfflineMode = true;
+      throw new Error("No se puede calcular una ruta accesible sin el servicio de rutas; los caminos del campus aún no están verificados.");
     }
-  ];
+  }
 
-  if (perfil === "silla_ruedas") {
-    obstaculosEvitados = ["Escaleras acceso central", "Loma muy empinada"];
-    explicacion = "Se seleccionó esta ruta para el perfil silla_ruedas porque evita escaleras y pendientes pronunciadas, priorizando el acceso por rampa.";
-  } else if (perfil === "discapacidad_visual") {
-    obstaculosEvitados = ["Bache en sendero central", "Escalones sin aviso táctil"];
-    explicacion = "Se seleccionó esta ruta para el perfil discapacidad_visual porque prioriza pasillos despejados y con superficies continuas.";
-  } else {
-    obstaculosEvitados = ["Escaleras empinadas"];
-    explicacion = "Se seleccionó esta ruta para el perfil muletas porque reduce la distancia y evita escalinatas pronunciadas.";
+  /**
+   * Obtiene los reportes comunitarios de obstáculos.
+   */
+  async function getReportes() {
+    try {
+      const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/reportes`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
+      API_CONFIG.isOfflineMode = false;
+      return data;
+    } catch (err) {
+      console.warn("Aviso: Obteniendo reportes desde base local.", err.message);
+      API_CONFIG.isOfflineMode = true;
+      // Recuperar de localStorage si el usuario creó reportes previamente
+      const guardados = localStorage.getItem('rsb_reportes_locales');
+      if (guardados) {
+        try {
+          return JSON.parse(guardados);
+        } catch (e) {}
+      }
+      return CAMPUS_MOCK_DATA.reportes;
+    }
+  }
+
+  /**
+   * Envía un nuevo reporte comunitario de obstáculo.
+   */
+  async function crearReporte(reporteData) {
+    try {
+      const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/reportes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(reporteData)
+      });
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
+      API_CONFIG.isOfflineMode = false;
+      return data;
+    } catch (err) {
+      console.warn("Aviso: Guardando reporte localmente por modo offline.", err.message);
+      API_CONFIG.isOfflineMode = true;
+
+      // Crear nuevo reporte mock local
+      const nuevoReporte = {
+        id: `rep_${Date.now()}`,
+        titulo: reporteData.titulo,
+        tipo: reporteData.tipo,
+        severidad: reporteData.severidad,
+        descripcion: reporteData.descripcion,
+        coordenadas: reporteData.coordenadas,
+        fechaActualizacion: "Hace un momento",
+        confirmaciones: 1,
+        confianza: 75
+      };
+
+      // Persistir en lista local
+      let lista = CAMPUS_MOCK_DATA.reportes;
+      const guardados = localStorage.getItem('rsb_reportes_locales');
+      if (guardados) {
+        try {
+          lista = JSON.parse(guardados);
+        } catch (e) {}
+      }
+      lista.unshift(nuevoReporte);
+      localStorage.setItem('rsb_reportes_locales', JSON.stringify(lista));
+
+      return {
+        exito: true,
+        mensaje: "Reporte registrado con éxito (Almacenado localmente)",
+        reporte: nuevoReporte
+      };
+    }
+  }
+
+  /**
+   * Confirma un reporte de la comunidad para incrementar su confiabilidad.
+   */
+  async function confirmarReporte(reporteId) {
+    try {
+      const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/reportes/${reporteId}/confirmar`, {
+        method: 'POST'
+      });
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      // Manejo local offline
+      let lista = CAMPUS_MOCK_DATA.reportes;
+      const guardados = localStorage.getItem('rsb_reportes_locales');
+      if (guardados) {
+        try { lista = JSON.parse(guardados); } catch (e) {}
+      }
+      const item = lista.find(r => r.id === reporteId);
+      if (item) {
+        item.confirmaciones += 1;
+        item.confianza = Math.min(99, item.confianza + 5);
+        localStorage.setItem('rsb_reportes_locales', JSON.stringify(lista));
+      }
+      return { exito: true, nuevoNivelConfianza: item ? item.confianza : 90 };
+    }
+  }
+
+  /**
+   * Informa el estado actual del modo de conexión.
+   */
+  function isOffline() {
+    return API_CONFIG.isOfflineMode;
   }
 
   return {
-    ruta_coordenadas: coordenadas,
-    obstaculos_evitados: obstaculosEvitados,
-    alertas_en_ruta: alertas,
-    explicacion_ia: explicacion,
-    nivel_confianza: "Alto (94%)",
-    ultima_actualizacion: new Date().toISOString().split("T")[0]
-  };
-}
-
-// Exportar para uso modular o global
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    API_BASE_URL,
     getLugares,
     calcularRuta,
-    getObstaculos,
-    reportarObstaculo,
-    FALLBACK_LUGARES,
-    FALLBACK_OBSTACULOS
+    getReportes,
+    crearReporte,
+    confirmarReporte,
+    isOffline
   };
-} else {
-  window.api = {
-    API_BASE_URL,
-    getLugares,
-    calcularRuta,
-    getObstaculos,
-    reportarObstaculo,
-    FALLBACK_LUGARES,
-    FALLBACK_OBSTACULOS
-  };
-}
+})();

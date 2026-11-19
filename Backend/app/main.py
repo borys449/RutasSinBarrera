@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.lugares import router as lugares_router
 from app.routes.rutas import router as rutas_router
-from app.routes.reportes import router as reportes_router
+from app.routes.reportes import reportes_router, router as obstaculos_router
 
 app = FastAPI(
     title="RutaSinBarreras API — Campus ULEAM Manta",
@@ -29,6 +29,7 @@ app.add_middleware(
 # Registro de routers de la API
 app.include_router(lugares_router)
 app.include_router(rutas_router)
+app.include_router(obstaculos_router)
 app.include_router(reportes_router)
 
 

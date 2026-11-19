@@ -3,195 +3,437 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RutaSinBarreras — Campus ULEAM Manta</title>
-  <meta name="description" content="Plataforma de enrutamiento urbano accesible para el campus matriz de la Universidad Laica Eloy Alfaro de Manabí (ULEAM) en Manta.">
+  <meta name="description" content="RutaSinBarreras - Sistema inteligente y accesible de recomendación de rutas urbanas y de campus sin obstáculos">
+  <title>RutaSinBarreras | Rutas Urbanas Accesibles con IA</title>
 
-  <!-- Leaflet Map CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Hoja de estilos de Leaflet para el mapa -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 
-  <!-- Hojas de Estilo del Proyecto -->
+  <!-- Hojas de estilos del proyecto -->
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/accesibility.css">
 </head>
-<body>
+<body class="font-size-md">
 
-  <!-- Encabezado y Barra de Herramientas de Accesibilidad -->
+  <!-- Enlace accesible de salto al contenido -->
+  <a href="#main-content" class="skip-link">Saltar al mapa y contenido principal</a>
+
+  <!-- Región para Lectores de Pantalla (Live Announcer) -->
+  <div id="a11y-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Barra Superior / Encabezado Principal -->
   <header class="app-header" role="banner">
-    <div class="logo-area">
-      <span class="logo-icon" aria-hidden="true">♿</span>
+    <div class="header-brand">
+      <div class="brand-icon" aria-hidden="true">
+        <!-- Icono Accesibilidad SVG -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="4" r="2"/>
+          <path d="M19 13v-2c-1.54.02-3.09-.75-4.07-1.83l-1.29-1.43c-.17-.19-.38-.34-.61-.45-.01 0-.01-.01-.02-.01H13c-.35-.2-.75-.3-1.19-.26-.72.07-1.34.52-1.63 1.18L8.4 12.3c-.31.7-.17 1.51.34 2.07.52.56 1.34.75 2.05.47l1.21-.48v3.64l-2.73 3.64c-.45.6-.33 1.45.27 1.9.6.45 1.45.33 1.9-.27l3.2-4.27c.23-.31.36-.69.36-1.08V13.8c.83.65 1.87 1.09 3 1.17v-1.97h1z"/>
+        </svg>
+      </div>
       <div>
-        <h1 class="logo-title">RutaSinBarreras</h1>
-        <p class="logo-subtitle">Campus Matriz ULEAM — Manta, Ecuador</p>
+        <h1 class="brand-title">RutaSinBarreras</h1>
+        <span class="brand-tagline">Navegación Inclusiva Asistida por IA</span>
       </div>
     </div>
 
-    <!-- Barra de Accesibilidad (WCAG 2.1) -->
-    <nav class="accessibility-toolbar" aria-label="Herramientas de accesibilidad">
-      <button id="btn-contrast" class="a11y-btn" aria-pressed="false" title="Alternar modo de alto contraste">
-        🌓 Contraste
+    <!-- Barra de Herramientas de Accesibilidad Universal -->
+    <nav class="accessibility-bar" aria-label="Herramientas de Accesibilidad">
+      <!-- Indicador de Conexión / Modo Offline -->
+      <div id="connection-badge" class="connection-status" role="status" aria-live="polite" title="Estado de la conexión">
+        <span class="status-dot"></span>
+        <span id="connection-text">Modo: Local / Demo</span>
+      </div>
+
+      <!-- Disminuir / Aumentar Tamaño de Fuente -->
+      <button type="button" id="btn-font-decrease" class="a11y-btn" aria-label="Disminuir tamaño de letra" title="Disminuir texto">
+        <span aria-hidden="true">A-</span>
       </button>
-      <button id="btn-font-decrease" class="a11y-btn" title="Reducir tamaño de letra" aria-label="Reducir tamaño de letra">
-        A-
+      <button type="button" id="btn-font-increase" class="a11y-btn" aria-label="Aumentar tamaño de letra" title="Aumentar texto">
+        <span aria-hidden="true">A+</span>
       </button>
-      <button id="btn-font-reset" class="a11y-btn" title="Restablecer tamaño de letra" aria-label="Restablecer tamaño de letra">
-        A
+
+      <!-- Botón Alto Contraste -->
+      <button type="button" id="btn-contrast-toggle" class="a11y-btn" aria-pressed="false" aria-label="Alternar modo de alto contraste" title="Alto Contraste">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18v-16c4.41 0 8 3.59 8 8s-3.59 8-8 8z"/>
+        </svg>
+        <span class="btn-text-label">Contraste</span>
       </button>
-      <button id="btn-font-increase" class="a11y-btn" title="Aumentar tamaño de letra" aria-label="Aumentar tamaño de letra">
-        A+
-      </button>
-      <button id="btn-dyslexic" class="a11y-btn" aria-pressed="false" title="Alternar tipografía accesible para dislexia">
-        📖 Fuente Clara
+
+      <!-- Botón Síntesis de Voz / Lectura -->
+      <button type="button" id="btn-tts-toggle" class="a11y-btn" aria-pressed="false" aria-label="Activar lectura por voz automática" title="Lectura por voz">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+        <span class="btn-text-label">Voz</span>
       </button>
     </nav>
   </header>
 
-  <!-- Contenedor Principal -->
-  <main class="main-container" role="main">
-    
-    <!-- Barra Lateral de Controles y Resultados -->
-    <aside class="sidebar" aria-label="Panel de Planificación de Rutas">
+  <!-- Layout Principal de la Aplicación -->
+  <div class="app-layout">
+
+    <!-- Panel Lateral Izquierdo (Interacción y Controles) -->
+    <aside id="sidebar-drawer" class="sidebar" role="region" aria-label="Panel de interacción y configuración de rutas">
       
-      <!-- Formulario de Ruta -->
-      <section class="panel-card" aria-labelledby="heading-planificador">
-        <h2 id="heading-planificador" class="panel-title">
-          <span>🧭</span> Planificar Ruta Accesible
-        </h2>
-
-        <div class="form-group">
-          <label for="select-origen">Punto de Partida (Origen):</label>
-          <select id="select-origen" class="form-control" aria-required="true">
-            <option value="">Cargando puntos de partida...</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="select-destino">Destino en Campus:</label>
-          <select id="select-destino" class="form-control" aria-required="true">
-            <option value="">Cargando destinos...</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="select-perfil">Perfil de Accesibilidad:</label>
-          <select id="select-perfil" class="form-control">
-            <option value="silla_ruedas">🦽 Silla de ruedas (evita escaleras y pendientes > 8%)</option>
-            <option value="discapacidad_visual">🦯 Discapacidad visual (prioriza guías podotáctiles y sin baches)</option>
-            <option value="muletas">🩼 Movilidad reducida / Muletas (evita graderíos largos)</option>
-          </select>
-        </div>
-
-        <button id="btn-calcular-ruta" class="btn btn-primary" type="button">
-          <span>🧭</span> Calcular Ruta Accesible
+      <!-- Navegación por Pestañas Accesibles -->
+      <div class="tab-navigation" role="tablist" aria-label="Secciones del panel">
+        <button type="button" id="tab-rutas" class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-rutas">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+          </svg>
+          <span>Rutas</span>
         </button>
-      </section>
 
-      <!-- Tarjeta de Explicación IA y Alertas de Ruta -->
-      <section id="ai-explanation-card" class="panel-card ai-card" style="display: none;" aria-live="polite">
-        <div class="ai-header">
-          <h3 class="panel-title" style="margin: 0; font-size: 1rem;">
-            <span>🤖</span> Criterio de Accesibilidad IA
-          </h3>
-          <span id="ai-confidence-badge" class="confidence-badge">Alto (94%)</span>
-        </div>
-
-        <p id="ai-explanation-text" class="ai-text"></p>
-        <button id="btn-speak-explanation" class="a11y-btn" style="margin-bottom: 0.75rem;" title="Escuchar en voz alta la explicación">
-          🔊 Escuchar Explicación
+        <button type="button" id="tab-lugares" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-lugares">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          <span>Lugares</span>
         </button>
-        <div id="ai-update-date" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;"></div>
 
-        <!-- Barreras Evitadas -->
-        <div id="avoided-obstacles-container" style="display: none; margin-bottom: 0.75rem;">
-          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--danger-color); margin-bottom: 0.3rem;">
-            Barreras evitadas en este trayecto:
-          </h4>
-          <ul id="avoided-obstacles-list" class="avoided-list"></ul>
-        </div>
-
-        <!-- Alertas y Accesos Priorizados -->
-        <div id="route-alerts-container" style="display: none;">
-          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--secondary-color); margin-bottom: 0.3rem;">
-            Accesos e infraestructuras en ruta:
-          </h4>
-          <ul id="route-alerts-list" class="alerts-list"></ul>
-        </div>
-      </section>
-
-      <!-- Panel de Reporte Colaborativo -->
-      <section class="panel-card">
-        <h3 class="panel-title" style="font-size: 1rem;">
-          <span>📢</span> Reporte Comunitario
-        </h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-          ¿Detectaste una nueva barrera o una rampa habilitada? Haz clic sobre el mapa o usa el botón para registrarlo.
-        </p>
-        <button id="btn-abrir-reporte" class="btn btn-secondary" type="button">
-          <span>➕</span> Reportar Obstáculo o Acceso
+        <button type="button" id="tab-reportar" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-reportar">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+          <span>Reportar</span>
         </button>
-      </section>
 
-    </aside>
+        <button type="button" id="tab-reportes" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-reportes">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+          <span>Comunidad</span>
+        </button>
 
-    <!-- Mapa Interactivo Leaflet -->
-    <section class="map-container" aria-label="Mapa interactivo del campus ULEAM">
-      <div id="map" role="application" aria-label="Mapa de navegación accesible"></div>
-    </section>
-
-  </main>
-
-  <!-- Modal para Reportar Obstáculo -->
-  <div id="modal-reporte" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modal-titulo" class="panel-title" style="margin: 0;">
-          <span>🚩</span> Reportar Novedad en el Campus
-        </h3>
-        <button id="btn-cerrar-modal" class="modal-close-btn" aria-label="Cerrar modal">&times;</button>
+        <button type="button" id="tab-perfil" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-perfil">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+          <span>Mi Perfil</span>
+        </button>
       </div>
 
-      <form id="form-reporte-obstaculo">
-        <div class="form-group">
-          <label for="reporte-tipo">Tipo de Novedad:</label>
-          <select id="reporte-tipo" class="form-control" required>
-            <option value="escaleras">🪜 Escaleras sin rampa</option>
-            <option value="loma_empinada">⛰️ Pendiente o loma muy pronunciada</option>
-            <option value="bache">🕳️ Bache o adoquín levantado</option>
-            <option value="rampa">♿ Rampa habilitada</option>
-          </select>
-        </div>
+      <!-- Contenedores de las Pestañas -->
+      <div class="tab-content">
 
-        <div class="form-group">
-          <label for="reporte-mensaje">Descripción / Advertencia:</label>
-          <input type="text" id="reporte-mensaje" class="form-control" placeholder="Ej: Escalón sin rampa junto a biblioteca" required>
-        </div>
+        <!-- ================= PANEL 1: CALCULAR RUTA ================= -->
+        <section id="panel-rutas" class="tab-panel active" role="tabpanel" aria-labelledby="tab-rutas">
+          <form id="form-calcular-ruta" novalidate>
+            <div class="form-group">
+              <label for="select-origen" class="form-label">
+                <span>Punto de Origen</span>
+                <span class="form-hint">Selecciona o haz clic en el mapa</span>
+              </label>
+              <select id="select-origen" class="form-control" required>
+                <option value="">-- Seleccionar Origen --</option>
+              </select>
+              <span id="error-origen" class="form-error">Por favor selecciona un punto de inicio válido.</span>
+            </div>
 
-        <div style="display: flex; gap: 0.5rem;">
-          <div class="form-group" style="flex: 1;">
-            <label for="reporte-lat">Latitud:</label>
-            <input type="number" step="any" id="reporte-lat" class="form-control" required>
+            <div class="form-group">
+              <label for="select-destino" class="form-label">
+                <span>Punto de Destino</span>
+                <span class="form-hint">Lugar al que deseas llegar</span>
+              </label>
+              <select id="select-destino" class="form-control" required>
+                <option value="">-- Seleccionar Destino --</option>
+              </select>
+              <span id="error-destino" class="form-error">Por favor selecciona un punto de destino distinto al origen.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="select-perfil" class="form-label">
+                <span>Perfil de Movilidad Funcional</span>
+              </label>
+              <select id="select-perfil" class="form-control">
+                <option value="silla_ruedas">Silla de Ruedas (Sin escaleras, pendientes &lt; 6%)</option>
+                <option value="baston_andador">Bastón / Andador (Ruta corta, con zonas de descanso)</option>
+                <option value="baja_vision">Baja Visión / Ceguera (Senderos guiados, libre de obstáculos)</option>
+                <option value="adulto_mayor">Adulto Mayor (Sin pendientes fuertes ni escaleras)</option>
+                <option value="estandar">Movilidad General Accesible</option>
+              </select>
+            </div>
+
+            <button type="submit" id="btn-calcular-ruta" class="btn btn-primary btn-block">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+              </svg>
+              <span>Calcular Ruta Óptima Accesible</span>
+            </button>
+          </form>
+
+          <!-- Resultados del Cálculo y Explicación de IA -->
+          <div id="resultado-ruta-container" style="display: none;" class="card-list" aria-live="polite">
+            <!-- Tarjeta con Componente de IA Explicativa -->
+            <article class="ai-card" role="region" aria-label="Recomendación Inteligente">
+              <div class="ai-header">
+                <span class="ai-badge">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5z"/>
+                  </svg>
+                  Explicación de la IA
+                </span>
+                <button type="button" id="btn-leer-explicacion-ia" class="btn btn-secondary btn-sm" aria-label="Escuchar explicación de la inteligencia artificial">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                  </svg>
+                  <span>Escuchar</span>
+                </button>
+              </div>
+              <p id="texto-explicacion-ia" class="ai-explanation">
+                <!-- Se llena dinámicamente con la recomendación explicativa -->
+              </p>
+              <div class="ai-metrics">
+                <div class="metric-item">
+                  <div id="metrica-distancia" class="metric-value">0 m</div>
+                  <div class="metric-label">Distancia</div>
+                </div>
+                <div class="metric-item">
+                  <div id="metrica-tiempo" class="metric-value">0 min</div>
+                  <div class="metric-label">Tiempo Est.</div>
+                </div>
+                <div class="metric-item">
+                  <div id="metrica-barreras" class="metric-value">0</div>
+                  <div class="metric-label">Barreras Evitadas</div>
+                </div>
+              </div>
+            </article>
+
+            <!-- Lista de Pasos e Instrucciones Accesibles -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 1rem; font-weight: 700;">Instrucciones Paso a Paso</h3>
+                <button type="button" id="btn-leer-todos-pasos" class="btn btn-secondary btn-sm" aria-label="Leer todas las instrucciones de navegación por voz">
+                  <span>Leer Pasos</span>
+                </button>
+              </div>
+              <ol id="lista-pasos-ruta" class="steps-list" aria-label="Pasos detallados de la ruta"></ol>
+            </div>
           </div>
-          <div class="form-group" style="flex: 1;">
-            <label for="reporte-lng">Longitud:</label>
-            <input type="number" step="any" id="reporte-lng" class="form-control" required>
-          </div>
-        </div>
+        </section>
 
-        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <button type="submit" class="btn btn-primary" style="flex: 2;">
-            Guardar Reporte
-          </button>
+        <!-- ================= PANEL 2: LUGARES ACCESIBLES ================= -->
+        <section id="panel-lugares" class="tab-panel" role="tabpanel" aria-labelledby="tab-lugares">
+          <div class="form-group">
+            <label for="filtro-categoria-lugares" class="form-label">Filtrar por Categoría</label>
+            <select id="filtro-categoria-lugares" class="form-control">
+              <option value="todos">Todos los sitios registrados</option>
+              <option value="campus">Campus</option>
+              <option value="acceso">Entradas</option>
+              <option value="facultad">Facultades</option>
+              <option value="biblioteca">Bibliotecas</option>
+              <option value="punto_interes">Puntos de interés</option>
+              <option value="rampa">Rampas de Acceso</option>
+              <option value="ascensor">Ascensores Operativos</option>
+              <option value="bano">Baños Adaptados</option>
+              <option value="descanso">Zonas de Descanso / Bancas</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="buscar-lugar" class="form-label">Buscar por Nombre</label>
+            <input type="search" id="buscar-lugar" class="form-control" placeholder="Ejemplo: Biblioteca, Facultad, Rampa...">
+          </div>
+
+          <div id="lista-lugares" class="card-list" aria-label="Listado de sitios ubicados del campus">
+            <!-- Se llena dinámicamente -->
+          </div>
+        </section>
+
+        <!-- ================= PANEL 3: REPORTAR OBSTÁCULO ================= -->
+        <section id="panel-reportar" class="tab-panel" role="tabpanel" aria-labelledby="tab-reportar">
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">
+            Ayuda a la comunidad reportando barreras de accesibilidad como escaleras rotas, ascensores fuera de servicio o aceras bloqueadas.
+          </p>
+
+          <form id="form-reportar-obstaculo" novalidate>
+            <div class="form-group">
+              <label for="reporte-titulo" class="form-label">Título del Reporte</label>
+              <input type="text" id="reporte-titulo" class="form-control" placeholder="Ej. Ascensor Bloqueado Edificio B" required minlength="4">
+              <span id="error-reporte-titulo" class="form-error">Ingresa un título descriptivo (mínimo 4 caracteres).</span>
+            </div>
+
+            <div class="form-group">
+              <label for="reporte-tipo" class="form-label">Tipo de Barrera u Obstáculo</label>
+              <select id="reporte-tipo" class="form-control" required>
+                <option value="escalera_sin_rampa">Escaleras sin rampa o pendiente excesiva</option>
+                <option value="ascensor_averiado">Ascensor fuera de servicio / averiado</option>
+                <option value="acera_deteriorada">Acera rota / baches / adoquín suelto</option>
+                <option value="obras_bloqueo">Obras o bloqueo temporal de sendero</option>
+                <option value="cruce_inseguro">Cruce inseguro o sin rebaje de acera</option>
+                <option value="otro">Otro obstáculo</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reporte-severidad" class="form-label">Nivel de Afectación</label>
+              <select id="reporte-severidad" class="form-control">
+                <option value="critico">Crítico (Impide completamente el paso en silla/bastón)</option>
+                <option value="moderado">Moderado (Dificulta el paso pero con precaución)</option>
+                <option value="leve">Leve (Detalle menor de accesibilidad)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reporte-descripcion" class="form-label">Descripción Detallada</label>
+              <textarea id="reporte-descripcion" class="form-control" rows="3" placeholder="Indica detalles para alertar a otros usuarios..." required minlength="6"></textarea>
+              <span id="error-reporte-descripcion" class="form-error">Por favor proporciona una breve descripción.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Ubicación Geográfica</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="reporte-coordenadas" class="form-control" placeholder="Haz clic en el mapa o usa GPS" readonly required>
+                <button type="button" id="btn-gps-reporte" class="btn btn-secondary btn-sm" title="Usar mi ubicación actual">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                  </svg>
+                </button>
+              </div>
+              <span id="error-reporte-ubicacion" class="form-error">Debes fijar un punto en el mapa para ubicar el obstáculo.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="reporte-foto-simulada" class="form-label">
+                <span>Fotografía del Obstáculo (Opcional)</span>
+                <span class="form-hint">Detección inicial de IA</span>
+              </label>
+              <input type="file" id="reporte-foto-simulada" class="form-control" accept="image/*">
+            </div>
+
+            <button type="submit" id="btn-guardar-reporte" class="btn btn-danger btn-block">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              <span>Publicar Reporte a la Comunidad</span>
+            </button>
+          </form>
+        </section>
+
+        <!-- ================= PANEL 4: REPORTES DE LA COMUNIDAD ================= -->
+        <section id="panel-reportes" class="tab-panel" role="tabpanel" aria-labelledby="tab-reportes">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1rem; font-weight: 700;">Reportes Activos</h3>
+            <span id="contador-reportes" class="badge badge-obstaculo">0 Activos</span>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">
+            Cada reporte cuenta con fecha de actualización y cálculo de confiabilidad basado en confirmaciones de la comunidad.
+          </p>
+          <div id="lista-reportes-comunidad" class="card-list" aria-label="Lista de reportes comunitarios">
+            <!-- Se llena dinámicamente -->
+          </div>
+        </section>
+
+        <!-- ================= PANEL 5: MI PERFIL Y PREFERENCIAS ================= -->
+        <section id="panel-perfil" class="tab-panel" role="tabpanel" aria-labelledby="tab-perfil">
+          <h3 style="font-size: 1rem; font-weight: 700;">Preferencias de Movilidad e Interacción</h3>
+          
+          <div class="form-group">
+            <label for="perfil-usuario-defecto" class="form-label">Perfil de Movilidad Predeterminado</label>
+            <select id="perfil-usuario-defecto" class="form-control">
+              <option value="silla_ruedas">Silla de Ruedas</option>
+              <option value="baston_andador">Bastón / Andador</option>
+              <option value="baja_vision">Baja Visión / Ceguera</option>
+              <option value="adulto_mayor">Adulto Mayor</option>
+              <option value="estandar">Movilidad General</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="justify-content: flex-start; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" id="check-vibracion" checked style="width: 18px; height: 18px;">
+              <span>Vibración y Señales Hápticas (alerta de obstáculos)</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="justify-content: flex-start; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" id="check-voz-automatica" style="width: 18px; height: 18px;">
+              <span>Lectura automática de explicaciones por voz</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="slider-velocidad-voz" class="form-label">
+              <span>Velocidad de Síntesis de Voz</span>
+              <span id="valor-velocidad-voz" class="form-hint">1.0x</span>
+            </label>
+            <input type="range" id="slider-velocidad-voz" min="0.5" max="1.5" step="0.1" value="1.0" class="form-control" style="padding: 0;">
+          </div>
+
+          <div class="form-group" style="margin-top: 1rem;">
+            <button type="button" id="btn-guardar-perfil" class="btn btn-primary btn-block">
+              Guardar Preferencias
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+
+    <!-- Área de Mapa Interactivo (Main Content) -->
+    <main id="main-content" class="map-container" role="main" aria-label="Mapa interactivo accesible del campus">
+      <div id="map"></div>
+
+      <!-- Controles Flotantes Superiores en el Mapa -->
+      <div class="map-floating-controls" aria-label="Herramientas del mapa">
+        <button type="button" id="btn-mapa-mi-ubicacion" class="map-control-btn" title="Centrar en mi ubicación">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+          </svg>
+          <span>Mi Ubicación</span>
+        </button>
+
+        <button type="button" id="btn-mapa-limpiar-ruta" class="map-control-btn" title="Limpiar ruta trazada" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+          <span>Limpiar Ruta</span>
+        </button>
+      </div>
+
+      <!-- Leyenda Accesible del Mapa -->
+      <aside class="map-legend" aria-label="Leyenda de símbolos del mapa">
+        <div class="legend-title">Simbología Accesible</div>
+        <div class="legend-item">
+          <span class="legend-icon" style="background: #1976d2;"></span>
+          <span>Rampa de acceso</span>
         </div>
-      </form>
-    </div>
+        <div class="legend-item">
+          <span class="legend-icon" style="background: #0288d1;"></span>
+          <span>Ascensor operativo</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-icon" style="background: #7e22ce;"></span>
+          <span>Baño adaptado</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-icon" style="background: #2e7d32;"></span>
+          <span>Zona de descanso</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-icon" style="background: #d32f2f;"></span>
+          <span>Obstáculo / Barrera</span>
+        </div>
+      </aside>
+
+      <!-- Botón Flotante para dispositivos móviles -->
+      <button type="button" id="btn-toggle-sidebar-mobile" class="mobile-toggle-btn" aria-label="Abrir panel de rutas y opciones">
+        Abrir Panel
+      </button>
+    </main>
   </div>
 
-  <!-- Leaflet Map JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Contenedor Global de Alertas Accesibles (Toasts) -->
+  <div id="toast-container" class="toast-container" aria-live="assertive"></div>
 
-  <!-- Scripts de la Aplicación -->
+  <!-- Scripts: Librería Leaflet y Módulos de la Aplicación -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/accesibility.js"></script>
   <script src="js/api.js"></script>
   <script src="js/map.js"></script>
-  <script src="js/accesibility.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
