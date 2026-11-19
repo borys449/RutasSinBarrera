@@ -1,80 +1,239 @@
-/* Estilos específicos de Accesibilidad y Modo Alto Contraste */
+/* ==========================================================================
+   Rutas Sin Barrera - Estilos Específicos de Accesibilidad Universal
+   Cumplimiento WCAG 2.1 Nivel AA / AAA
+   ========================================================================== */
 
-/* Soporte para lectores de pantalla */
+/* Clases de Utilidad para Lectores de Pantalla (Screen Readers) */
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
-/* Modo Alto Contraste */
-body.high-contrast {
-  --primary-color: #ffff00;
-  --primary-hover: #ffff55;
-  --bg-color: #000000;
-  --card-bg: #121212;
-  --text-color: #ffffff;
-  --text-muted: #e2e8f0;
-  --border-color: #ffffff;
-  --focus-ring: #00ffff;
-  background-color: #000000 !important;
-  color: #ffffff !important;
-}
-
-body.high-contrast .app-header,
-body.high-contrast .sidebar,
-body.high-contrast .panel-card,
-body.high-contrast .modal-content {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-  border-color: #ffffff !important;
-}
-
-body.high-contrast .form-control {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-  border: 2px solid #ffffff !important;
-}
-
-body.high-contrast .btn-primary {
-  background-color: #ffff00 !important;
-  color: #000000 !important;
-  font-weight: 800 !important;
-  border: 2px solid #ffffff !important;
-}
-
-body.high-contrast .btn-secondary,
-body.high-contrast .a11y-btn {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-  border: 2px solid #ffffff !important;
-}
-
-body.high-contrast .ai-card {
-  background-color: #1a1a1a !important;
-  border-left: 6px solid #ffff00 !important;
-}
-
-body.high-contrast .confidence-badge {
-  background-color: #ffffff !important;
-  color: #000000 !important;
-}
-
-/* Modo Fuente para Dislexia */
-body.font-dyslexic {
-  font-family: "OpenDyslexic", "Comic Sans MS", "Arial", sans-serif !important;
-  letter-spacing: 0.05em;
-  word-spacing: 0.1em;
-}
-
-/* Indicador de foco reforzado */
+/* Indicador de foco mejorado para navegación por teclado */
 :focus-visible {
-  outline: 3px solid var(--focus-ring) !important;
+  outline: 3px solid #ff9800 !important;
   outline-offset: 3px !important;
+}
+
+/* --------------------------------------------------------------------------
+   Escalamiento Tipográfico Accesible
+   -------------------------------------------------------------------------- */
+body.font-size-sm {
+  --font-base: 14px;
+}
+
+body.font-size-md {
+  --font-base: 16px;
+}
+
+body.font-size-lg {
+  --font-base: 19px;
+}
+
+body.font-size-xl {
+  --font-base: 22px;
+}
+
+/* --------------------------------------------------------------------------
+   Tema de Alto Contraste (Amarillo sobre Negro - WCAG AAA 7:1+)
+   Ideal para personas con baja visión, cataratas o daltonismo severo
+   -------------------------------------------------------------------------- */
+body.theme-high-contrast {
+  --bg-main: #000000;
+  --bg-surface: #000000;
+  --bg-surface-elevated: #121212;
+  --bg-muted: #1a1a1a;
+
+  --text-main: #ffff00; /* Amarillo puro sobre negro */
+  --text-secondary: #ffffff;
+  --text-muted: #e2e8f0;
+  --text-inverted: #000000;
+
+  --primary: #ffff00;
+  --primary-hover: #ffee00;
+  --primary-light: #222200;
+  --primary-dark: #ffff00;
+
+  --secondary: #00ff66;
+  --secondary-hover: #00dd55;
+  --secondary-light: #002b11;
+
+  --danger: #ff4d4d;
+  --danger-light: #3a0000;
+
+  --warning: #ffaa00;
+  --warning-light: #3a2200;
+
+  --info: #00ffff;
+  --info-light: #003333;
+
+  --border-color: #ffff00;
+  --border-focus: #00ff66;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+}
+
+body.theme-high-contrast .app-header {
+  border-bottom: 3px solid #ffff00;
+}
+
+body.theme-high-contrast .sidebar {
+  border-right: 3px solid #ffff00;
+}
+
+body.theme-high-contrast .a11y-btn {
+  border: 2px solid #ffff00;
+  color: #ffff00;
+}
+
+body.theme-high-contrast .a11y-btn.active {
+  background: #ffff00;
+  color: #000000;
+}
+
+body.theme-high-contrast .btn-primary {
+  background: #ffff00;
+  color: #000000;
+  border-color: #ffff00;
+  font-weight: 900;
+}
+
+body.theme-high-contrast .btn-primary:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+body.theme-high-contrast .btn-secondary {
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  background: #000000;
+}
+
+body.theme-high-contrast .ai-card {
+  background: #000000;
+  border: 3px solid #00ffff;
+}
+
+body.theme-high-contrast .ai-badge {
+  background: #00ffff;
+  color: #000000;
+}
+
+body.theme-high-contrast .ai-explanation {
+  color: #ffffff;
+}
+
+body.theme-high-contrast .ai-explanation strong {
+  color: #00ffff;
+}
+
+body.theme-high-contrast .item-card {
+  border: 2px solid #ffffff;
+  background: #121212;
+}
+
+body.theme-high-contrast .tab-btn {
+  color: #ffffff;
+}
+
+body.theme-high-contrast .tab-btn[aria-selected="true"] {
+  color: #ffff00;
+  border-bottom: 4px solid #ffff00;
+  background: #1a1a1a;
+}
+
+body.theme-high-contrast .form-control {
+  border: 2px solid #ffff00;
+  background-color: #000000;
+  color: #ffff00;
+}
+
+body.theme-high-contrast .form-control:focus {
+  border-color: #00ff66;
+  box-shadow: 0 0 0 3px #00ff66;
+}
+
+body.theme-high-contrast .step-item {
+  border: 1px solid #ffffff;
+  background: #111111;
+  color: #ffffff;
+}
+
+body.theme-high-contrast .step-num {
+  background: #ffff00;
+  color: #000000;
+  font-weight: 900;
+}
+
+body.theme-high-contrast .map-legend,
+body.theme-high-contrast .map-control-btn {
+  background: #000000;
+  border: 2px solid #ffff00;
+  color: #ffff00;
+}
+
+/* Filtro de alto contraste para el mapa de Leaflet */
+body.theme-high-contrast .leaflet-tile-pane {
+  filter: contrast(150%) brightness(90%) invert(100%) hue-rotate(180deg);
+}
+
+/* --------------------------------------------------------------------------
+   Tema Monocromático / Escala de Grises
+   Para personas con problemas de fatiga visual o acromatopsia
+   -------------------------------------------------------------------------- */
+body.theme-monochrome {
+  filter: grayscale(100%);
+}
+
+/* --------------------------------------------------------------------------
+   Modo Fuente Amigable para Dislexia
+   -------------------------------------------------------------------------- */
+body.theme-dyslexic {
+  font-family: "OpenDyslexic", "Comic Sans MS", Arial, sans-serif !important;
+  letter-spacing: 0.08em;
+  word-spacing: 0.15em;
+  line-height: 1.8;
+}
+
+body.theme-dyslexic p,
+body.theme-dyslexic span,
+body.theme-dyslexic div {
+  line-height: 1.8;
+}
+
+/* --------------------------------------------------------------------------
+   Resaltado de Elemento Actual en Lectura por Voz (Text-To-Speech)
+   -------------------------------------------------------------------------- */
+.tts-reading-active {
+  background-color: #fef08a !important;
+  color: #000000 !important;
+  outline: 3px solid #ca8a04 !important;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+body.theme-high-contrast .tts-reading-active {
+  background-color: #00ffff !important;
+  color: #000000 !important;
+  outline: 3px solid #ffff00 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Respeto a las preferencias del sistema del usuario (Prefers Reduced Motion)
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

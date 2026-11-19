@@ -6,24 +6,50 @@ from app.data.storage import get_all_lugares
 router = APIRouter(prefix="/api/lugares", tags=["Lugares"])
 
 
-class Lugar(BaseModel):
+class LugarFrontend(BaseModel):
     id: str
     nombre: str
-    tipo: str
-    lat: float
-    lng: float
-    referencia: Optional[str] = None
+    categoria: str
+    descripcion: str
+    coordenadas: List[float]
 
 
-@router.get("", response_model=List[Lugar])
+@router.get("", response_model=List[LugarFrontend])
 def listar_lugares(
     tipo: Optional[str] = Query(
         None,
-        description="Filtrar por tipo de lugar: 'puerta', 'facultad' o 'punto_interes'"
+        description="Filtrar por tipo: 'puerta', 'facultad', 'biblioteca' o 'punto_interes'"
     )
 ):
     """
     Devuelve los puntos de interés registrados en el campus ULEAM,
-    con opción de filtrar por tipo.
+    con el formato que consume el frontend y opción de filtrar por tipo.
     """
-    return get_all_lugares(tipo)
+    lugares = get_all_lugares(tipo)
+    return [
+        LugarFrontend(
+            id=lugar["id"],
+            nombre=lugar["nombre"],
+            categoria=_categoria_frontend(lugar),
+            descripcion=_descripcion_frontend(lugar),
+            coordenadas=[lugar["lat"], lugar["lng"]]
+        )
+        for lugar in lugares
+    ]
+
+
+def _categoria_frontend(lugar: dict) -> str:
+    if lugar["tipo"] == "puerta":
+        return "acceso"
+    if lugar["id"] == "uleam_centro":
+        return "campus"
+    if lugar["tipo"] == "punto_interes":
+        return "punto_interes"
+    return lugar["tipo"]
+
+
+def _descripcion_frontend(lugar: dict) -> str:
+    referencia = lugar.get("referencia", "")
+    if referencia:
+        return f"Ubicación de referencia: {referencia}. Coordenadas por validar en campo."
+    return "Coordenadas por validar en campo."

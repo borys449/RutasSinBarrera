@@ -117,11 +117,6 @@ def calcular_ruta_accesible(
                     "mensaje": msg
                 })
 
-    # Si no se detectaron directamente en el segmento pero existen obstáculos generales
-    if not obstaculos_evitados_textos and perfil_clean == "silla_ruedas":
-        # Por seguridad del campus, añadir barreras centrales evitadas en trazado
-        obstaculos_evitados_textos = ["Escaleras acceso central", "Loma muy empinada"]
-
     # Construcción de waypoints según la presencia de obstáculos
     # Si hay conflictos o se requiere rampa, desviamos por waypoints seguros
     waypoints: List[Tuple[float, float]] = [[o_lat, o_lng]]
@@ -173,24 +168,30 @@ def calcular_ruta_accesible(
 
     # Generación de la Explicación IA de Accesibilidad
     if perfil_clean == "silla_ruedas":
-        evitadas_str = ", ".join(obstaculos_evitados_textos) if obstaculos_evitados_textos else "escaleras y desniveles"
-        explicacion_ia = (
-            f"Se seleccionó esta ruta para el perfil {perfil_clean} porque evita {evitadas_str.lower()}, "
-            f"priorizando el acceso por calzadas uniformes y rampas con pendiente reglamentaria menor al 8%."
-        )
+        if obstaculos_evitados_textos:
+            considerados = ", ".join(obstaculos_evitados_textos)
+            explicacion_ia = f"El trazado experimental considera estos obstáculos reportados: {considerados}."
+        else:
+            explicacion_ia = (
+                "No hay obstáculos críticos registrados cerca del trazado aproximado; "
+                "esto no confirma que la ruta esté libre de barreras."
+            )
     elif perfil_clean == "discapacidad_visual":
         explicacion_ia = (
-            f"Se trazó una ruta para el perfil {perfil_clean} priorizando corredores con guías podotáctiles "
-            f"y libres de obstáculos aéreos, baches o adoquines desprendidos."
+            "El trazado es experimental. No hay datos verificados de guías podotáctiles, "
+            "iluminación ni obstáculos aéreos para confirmar su seguridad."
         )
     elif perfil_clean == "muletas":
-        evitadas_str = ", ".join(obstaculos_evitados_textos) if obstaculos_evitados_textos else "graderías y pendientes pronunciadas"
+        considerados = ", ".join(obstaculos_evitados_textos) if obstaculos_evitados_textos else "ninguno registrado"
         explicacion_ia = (
-            f"Se priorizó un trayecto continuo y de menor esfuerzo físico para el perfil {perfil_clean}, "
-            f"evitando {evitadas_str.lower()} y asegurando pasamanos en zonas de transición."
+            f"El trazado experimental considera estos obstáculos reportados: {considerados}. "
+            "Las pendientes y los pasamanos no están verificados."
         )
     else:
-        explicacion_ia = f"Ruta optimizada para perfil {perfil_clean} asegurando accesibilidad integral."
+        explicacion_ia = (
+            f"Trazado experimental para el perfil {perfil_clean}; "
+            "la accesibilidad integral no está verificada."
+        )
 
     # Si no hay alertas en ruta pero hay rampas registradas, añadir la más cercana como apoyo
     if not alertas_en_ruta and rampas_disponibles:

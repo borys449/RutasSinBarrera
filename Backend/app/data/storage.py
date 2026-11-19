@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import threading
+from datetime import date
 
 MOCK_FILE_PATH = Path(__file__).resolve().parent / "campus_mock.json"
 _lock = threading.Lock()
@@ -51,3 +52,24 @@ def save_new_obstaculo(obstaculo: Dict[str, Any]) -> Dict[str, Any]:
     data["obstaculos"] = obstaculos
     save_raw_data(data)
     return obstaculo
+
+
+def increment_obstaculo_confirmation(obstaculo_id: str) -> Optional[Dict[str, Any]]:
+    data = load_raw_data()
+    for obstaculo in data.get("obstaculos", []):
+        if obstaculo.get("id") != obstaculo_id:
+            continue
+
+        confianza = obstaculo.get("confianza")
+        if confianza is None:
+            digits = "".join(char for char in str(obstaculo.get("nivel_confianza", "")) if char.isdigit())
+            confianza = int(digits) if digits else 75
+
+        obstaculo["confirmaciones"] = int(obstaculo.get("confirmaciones", 0)) + 1
+        obstaculo["confianza"] = min(99, int(confianza) + 5)
+        obstaculo["nivel_confianza"] = f"{obstaculo['confianza']}%"
+        obstaculo["ultima_actualizacion"] = date.today().isoformat()
+        save_raw_data(data)
+        return obstaculo
+
+    return None

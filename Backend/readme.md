@@ -27,10 +27,10 @@ Prototipo web de enrutamiento urbano accesible enfocado en el campus matriz de l
 ```json
 {
   "id": "puerta_1",
-  "nombre": "Puerta 1 - Ingreso Principal",
+  "nombre": "Puerta 1 - Ingreso principal",
   "tipo": "puerta",
-  "lat": -0.9524,
-  "lng": -80.7455
+  "lat": -0.9549122,
+  "lng": -80.7460422
 }
 ```
 
@@ -72,40 +72,52 @@ Prototipo web de enrutamiento urbano accesible enfocado en el campus matriz de l
 {
   "id": "obs_1",
   "tipo": "escaleras",
-  "mensaje": "No apto por aquí: escaleras sin rampa en acceso central",
-  "lat": -0.9536,
-  "lng": -80.7446,
-  "nivel_confianza": "Alto (95%)",
-  "ultima_actualizacion": "2026-11-18"
+  "mensaje": "Escaleras sin rampa reportadas por un usuario",
+  "lat": -0.954,
+  "lng": -80.745,
+  "nivel_confianza": "75%",
+  "ultima_actualizacion": "AAAA-MM-DD"
 }
 ```
 *Valores sugeridos para `tipo`: `escaleras`, `loma_empinada`, `bache`, `rampa`.*
+*No se precargan obstáculos: las alertas deben proceder de reportes de usuarios, no de ubicaciones de demostración.*
+
+### Contrato compatible con el frontend
+
+El backend conserva `/api/obstaculos` para su contrato original y expone además los endpoints que consume `Frontend/js/api.js`:
+
+* `GET /api/lugares` devuelve `id`, `nombre`, `categoria`, `descripcion` y `coordenadas: [lat, lng]`. Los lugares almacenados como `puerta`, `facultad`, `biblioteca` y `punto_interes` se adaptan a las categorías del frontend.
+* `POST /api/rutas/calcular` acepta `{ "origen_id": "...", "destino_id": "...", "perfil_movilidad": "..." }` y devuelve `coordenadasRuta`, `explicacionIA`, `distancia`, `tiempoEstimado`, `barrerasEvitadas` y `pasos`. También acepta el formato anterior con objetos `origen` y `destino`.
+* `GET /api/reportes` adapta los obstáculos al modelo de reportes del frontend. `POST /api/reportes` registra reportes y `POST /api/reportes/{id}/confirmar` incrementa su confiabilidad.
+* Los perfiles `baja_vision`, `baston_andador` y `adulto_mayor` se traducen a los perfiles que entiende el motor actual. El cálculo de ruta es experimental y debe validarse en campo; no representa una red peatonal verificada.
 
 ---
 
 ## 3. Coordenadas y Puntos de Referencia del Campus ULEAM (Manta)
 
-Tabla consolidada cruzando los registros geográficos de Google Maps (Av. Circunvalación, Manta) con la distribución interna de bloques, ingresos y zonas de encuentro de los planos institucionales del campus matriz:
+Los pines de facultades, bibliotecas y puertas 1–3 corresponden a resultados de lugares de Google Maps; la puerta 4 proviene de OpenStreetMap. El centro es la referencia aproximada proporcionada por el usuario. Son ubicaciones de mapa, no un levantamiento topográfico ni una confirmación de accesibilidad; los edificios, entradas y condiciones de acceso deben verificarse en campo.
 
-| ID Sugerido | Nombre / Ubicación en Campus | Tipo | Referencia en Planos / Mapa | Latitud (`lat`) | Longitud (`lng`) |
-| :--- | :--- | :--- | :--- | :---: | :---: |
-| `uleam_centro` | Campus Matriz ULEAM (Centro) | `punto_interes` | Estadio Universitario / Eje central del campus | `-0.9538` | `-80.7448` |
-| `puerta_1` | Puerta 1 - Ingreso Principal | `puerta` | Calle S/N - Ingreso Universidad (junto a Plaza Cultural y Av. Circunvalación) | `-0.9521` | `-80.7456` |
-| `puerta_2` | Puerta 2 - Acceso Av. Circunvalación | `puerta` | Sector medio sobre Av. Circunvalación (cerca de Bloques B-16 / B-17) | `-0.9542` | `-80.7463` |
-| `puerta_3` | Tercera Puerta ULEAM | `puerta` | Acceso sector norte / Avenida Universidad 5 | `-0.9516` | `-80.7442` |
-| `fac_informatica` | Facultad de Ciencias Informáticas (FACCI) | `facultad` | Zona central-norte, junto al eje peatonal interior | `-0.9531` | `-80.7446` |
-| `fac_industrial` | Facultad de Ingeniería Industrial | `facultad` | Sector norte, próximo a Tercera Puerta y Calle Universidad 6 | `-0.9523` | `-80.7449` |
-| `fac_educacion` | Facultad de Ciencias de la Educación | `facultad` | Sector central del campus (cercano al área de Odontología) | `-0.9535` | `-80.7442` |
-| `fac_odontologia` | Facultad de Ciencias de la Salud - Odontología | `facultad` | Contigua a Ciencias de la Educación, sector central-este | `-0.9536` | `-80.7438` |
-| `fac_derecho` | Facultad de Ciencias Sociales, Derecho y Bienestar | `facultad` | Sector central (Jurisprudencia ULEAM) | `-0.9534` | `-80.7445` |
-| `fac_turismo` | Facultad de Turismo y Hotelería | `facultad` | Sector suroeste, cercano a Av. Eléctricos 4 | `-0.9544` | `-80.7456` |
-| `fac_medicina` | Facultad de Ciencias Médicas | `facultad` | Sector perimetral sobre Av. Circunvalación | `-0.9549` | `-80.7458` |
-| `punto_encuentro_1` | Explanada Trabajo Social (Punto Encuentro 1) | `punto_interes` | Zona norte-central interior (plano de evacuación) | `-0.9528` | `-80.7449` |
-| `punto_encuentro_2` | Canchas Múltiples (Punto Encuentro 2) | `punto_interes` | Zona este/sureste junto a Bloques B-05 / B-13 | `-0.9546` | `-80.7436` |
-| `punto_encuentro_3` | Parque Comunicación (Punto Encuentro 3) | `punto_interes` | Sector oeste-central interior | `-0.9539` | `-80.7457` |
-| `cac_uleam` | Centro de Atención Ciudadana (C.A.C.) | `punto_interes` | Sector norte, entre Plaza Cultural y Estadio Universitario | `-0.9527` | `-80.7453` |
+| ID | Lugar | Tipo | Latitud (`lat`) | Longitud (`lng`) |
+| :--- | :--- | :--- | :---: | :---: |
+| `uleam_centro` | Campus Matriz ULEAM (punto de referencia) | `punto_interes` | `-0.9527` | `-80.7452` |
+| `puerta_1` | Puerta 1 - Ingreso principal | `puerta` | `-0.9549122` | `-80.7460422` |
+| `puerta_2` | Puerta 2 ULEAM | `puerta` | `-0.9530482` | `-80.7436759` |
+| `puerta_3` | Tercera puerta ULEAM | `puerta` | `-0.9506268` | `-80.7461297` |
+| `puerta_4` | Puerta 4 ULEAM | `puerta` | `-0.9548909` | `-80.7441844` |
+| `fac_informatica` | Facultad de Ciencias Informáticas (FACCI) | `facultad` | `-0.952382` | `-80.7447735` |
+| `fac_industrial` | Facultad de Ingeniería Industrial | `facultad` | `-0.9512028` | `-80.7460773` |
+| `fac_educacion` | Facultad de Ciencias de la Educación | `facultad` | `-0.9542543` | `-80.7461308` |
+| `fac_odontologia` | Facultad de Ciencias de la Salud - Odontología | `facultad` | `-0.9529857` | `-80.7434419` |
+| `fac_derecho` | Facultad de Ciencias Sociales, Derecho y Bienestar | `facultad` | `-0.9530813` | `-80.7462284` |
+| `fac_turismo` | Facultad de Turismo y Hotelería | `facultad` | `-0.9537699` | `-80.7471212` |
+| `fac_medicina` | Facultad de Ciencias Médicas | `facultad` | `-0.9517139` | `-80.7439939` |
+| `biblioteca_economia` | Biblioteca de la Facultad de Economía | `biblioteca` | `-0.9540532` | `-80.74581` |
+| `biblioteca_trabajo_social` | Biblioteca de Trabajo Social | `biblioteca` | `-0.950773` | `-80.7454928` |
+| `biblioteca_derecho` | Biblioteca de Derecho | `biblioteca` | `-0.9531017` | `-80.7460541` |
+| `biblioteca_ingenieria` | Biblioteca de Ingeniería | `biblioteca` | `-0.9518982` | `-80.7463366` |
+| `biblioteca_arquitectura` | Biblioteca de Arquitectura | `biblioteca` | `-0.952776` | `-80.7462534` |
 
-> **Nota de calibración:** Debido a que los mapas comerciales presentan desfases respecto a las vías internas actuales de la universidad, estas coordenadas funcionan como base georreferenciada para el prototipo y pueden ajustarse con precisión decimal en `campus_mock.json` tras validación en campo.
+Los puntos de encuentro y el C.A.C. se retiraron del mapa por no contar con un pin verificable. Se pueden volver a agregar cuando se confirmen sus ubicaciones; tampoco se muestran obstáculos simulados como si fueran reportes reales.
 
 ---
 
