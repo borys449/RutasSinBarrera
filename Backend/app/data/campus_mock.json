@@ -1,0 +1,180 @@
+{
+  "lugares": [
+    {
+      "id": "uleam_centro",
+      "nombre": "Campus Matriz ULEAM (Centro)",
+      "tipo": "punto_interes",
+      "referencia": "Estadio Universitario / Eje central del campus",
+      "lat": -0.9538,
+      "lng": -80.7448
+    },
+    {
+      "id": "puerta_1",
+      "nombre": "Puerta 1 - Ingreso Principal",
+      "tipo": "puerta",
+      "referencia": "Calle S/N - Ingreso Universidad (junto a Plaza Cultural y Av. Circunvalación)",
+      "lat": -0.9521,
+      "lng": -80.7456
+    },
+    {
+      "id": "puerta_2",
+      "nombre": "Puerta 2 - Acceso Av. Circunvalación",
+      "tipo": "puerta",
+      "referencia": "Sector medio sobre Av. Circunvalación (cerca de Bloques B-16 / B-17)",
+      "lat": -0.9542,
+      "lng": -80.7463
+    },
+    {
+      "id": "puerta_3",
+      "nombre": "Tercera Puerta ULEAM",
+      "tipo": "puerta",
+      "referencia": "Acceso sector norte / Avenida Universidad 5",
+      "lat": -0.9516,
+      "lng": -80.7442
+    },
+    {
+      "id": "fac_informatica",
+      "nombre": "Facultad de Ciencias Informáticas (FACCI)",
+      "tipo": "facultad",
+      "referencia": "Zona central-norte, junto al eje peatonal interior",
+      "lat": -0.9531,
+      "lng": -80.7446
+    },
+    {
+      "id": "fac_industrial",
+      "nombre": "Facultad de Ingeniería Industrial",
+      "tipo": "facultad",
+      "referencia": "Sector norte, próximo a Tercera Puerta y Calle Universidad 6",
+      "lat": -0.9523,
+      "lng": -80.7449
+    },
+    {
+      "id": "fac_educacion",
+      "nombre": "Facultad de Ciencias de la Educación",
+      "tipo": "facultad",
+      "referencia": "Sector central del campus (cercano al área de Odontología)",
+      "lat": -0.9535,
+      "lng": -80.7442
+    },
+    {
+      "id": "fac_odontologia",
+      "nombre": "Facultad de Ciencias de la Salud - Odontología",
+      "tipo": "facultad",
+      "referencia": "Contigua a Ciencias de la Educación, sector central-este",
+      "lat": -0.9536,
+      "lng": -80.7438
+    },
+    {
+      "id": "fac_derecho",
+      "nombre": "Facultad de Ciencias Sociales, Derecho y Bienestar",
+      "tipo": "facultad",
+      "referencia": "Sector central (Jurisprudencia ULEAM)",
+      "lat": -0.9534,
+      "lng": -80.7445
+    },
+    {
+      "id": "fac_turismo",
+      "nombre": "Facultad de Turismo y Hotelería",
+      "tipo": "facultad",
+      "referencia": "Sector suroeste, cercano a Av. Eléctricos 4",
+      "lat": -0.9544,
+      "lng": -80.7456
+    },
+    {
+      "id": "fac_medicina",
+      "nombre": "Facultad de Ciencias Médicas",
+      "tipo": "facultad",
+      "referencia": "Sector perimetral sobre Av. Circunvalación",
+      "lat": -0.9549,
+      "lng": -80.7458
+    },
+    {
+      "id": "punto_encuentro_1",
+      "nombre": "Explanada Trabajo Social (Punto Encuentro 1)",
+      "tipo": "punto_interes",
+      "referencia": "Zona norte-central interior (plano de evacuación)",
+      "lat": -0.9528,
+      "lng": -80.7449
+    },
+    {
+      "id": "punto_encuentro_2",
+      "nombre": "Canchas Múltiples (Punto Encuentro 2)",
+      "tipo": "punto_interes",
+      "referencia": "Zona este/sureste junto a Bloques B-05 / B-13",
+      "lat": -0.9546,
+      "lng": -80.7436
+    },
+    {
+      "id": "punto_encuentro_3",
+      "nombre": "Parque Comunicación (Punto Encuentro 3)",
+      "tipo": "punto_interes",
+      "referencia": "Sector oeste-central interior",
+      "lat": -0.9539,
+      "lng": -80.7457
+    },
+    {
+      "id": "cac_uleam",
+      "nombre": "Centro de Atención Ciudadana (C.A.C.)",
+      "tipo": "punto_interes",
+      "referencia": "Sector norte, entre Plaza Cultural y Estadio Universitario",
+      "lat": -0.9527,
+      "lng": -80.7453
+    }
+  ],
+  "obstaculos": [
+    {
+      "id": "obs_1",
+      "tipo": "escaleras",
+      "mensaje": "No apto por aquí: escaleras sin rampa en acceso central",
+      "lat": -0.9536,
+      "lng": -80.7446,
+      "nivel_confianza": "Alto (95%)",
+      "ultima_actualizacion": "2026-11-18"
+    },
+    {
+      "id": "obs_2",
+      "tipo": "loma_empinada",
+      "mensaje": "Pendiente pronunciada superior al 12% hacia el pabellón de Medicina",
+      "lat": -0.9546,
+      "lng": -80.7460,
+      "nivel_confianza": "Medio (88%)",
+      "ultima_actualizacion": "2026-11-18"
+    },
+    {
+      "id": "obs_3",
+      "tipo": "bache",
+      "mensaje": "Adoquines levantados y bache en sendero peatonal hacia el C.A.C.",
+      "lat": -0.9526,
+      "lng": -80.7451,
+      "nivel_confianza": "Alto (91%)",
+      "ultima_actualizacion": "2026-11-18"
+    },
+    {
+      "id": "obs_4",
+      "tipo": "rampa",
+      "mensaje": "Rampa habilitada con pendiente suave y barandilla doble altura",
+      "lat": -0.9529,
+      "lng": -80.7451,
+      "nivel_confianza": "Alto (98%)",
+      "ultima_actualizacion": "2026-11-18"
+    },
+    {
+      "id": "obs_5",
+      "tipo": "rampa",
+      "mensaje": "Rampa de acceso lateral a FACCI con piso antideslizante",
+      "lat": -0.9532,
+      "lng": -80.7447,
+      "nivel_confianza": "Alto (96%)",
+      "ultima_actualizacion": "2026-11-18"
+    },
+    {
+      "id": "obs_6",
+      "tipo": "escaleras",
+      "mensaje": "Gradería de 8 escalones sin banda podotáctil de aviso",
+      "lat": -0.9533,
+      "lng": -80.7441,
+      "nivel_confianza": "Alto (93%)",
+      "ultima_actualizacion": "2026-11-18"
+    }
+  ]
+}

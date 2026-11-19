@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RutaSinBarreras — Campus ULEAM Manta</title>
+  <meta name="description" content="Plataforma de enrutamiento urbano accesible para el campus matriz de la Universidad Laica Eloy Alfaro de Manabí (ULEAM) en Manta.">
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Hojas de Estilo del Proyecto -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/accesibility.css">
+</head>
+<body>
+
+  <!-- Encabezado y Barra de Herramientas de Accesibilidad -->
+  <header class="app-header" role="banner">
+    <div class="logo-area">
+      <span class="logo-icon" aria-hidden="true">♿</span>
+      <div>
+        <h1 class="logo-title">RutaSinBarreras</h1>
+        <p class="logo-subtitle">Campus Matriz ULEAM — Manta, Ecuador</p>
+      </div>
+    </div>
+
+    <!-- Barra de Accesibilidad (WCAG 2.1) -->
+    <nav class="accessibility-toolbar" aria-label="Herramientas de accesibilidad">
+      <button id="btn-contrast" class="a11y-btn" aria-pressed="false" title="Alternar modo de alto contraste">
+        🌓 Contraste
+      </button>
+      <button id="btn-font-decrease" class="a11y-btn" title="Reducir tamaño de letra" aria-label="Reducir tamaño de letra">
+        A-
+      </button>
+      <button id="btn-font-reset" class="a11y-btn" title="Restablecer tamaño de letra" aria-label="Restablecer tamaño de letra">
+        A
+      </button>
+      <button id="btn-font-increase" class="a11y-btn" title="Aumentar tamaño de letra" aria-label="Aumentar tamaño de letra">
+        A+
+      </button>
+      <button id="btn-dyslexic" class="a11y-btn" aria-pressed="false" title="Alternar tipografía accesible para dislexia">
+        📖 Fuente Clara
+      </button>
+    </nav>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <main class="main-container" role="main">
+    
+    <!-- Barra Lateral de Controles y Resultados -->
+    <aside class="sidebar" aria-label="Panel de Planificación de Rutas">
+      
+      <!-- Formulario de Ruta -->
+      <section class="panel-card" aria-labelledby="heading-planificador">
+        <h2 id="heading-planificador" class="panel-title">
+          <span>🧭</span> Planificar Ruta Accesible
+        </h2>
+
+        <div class="form-group">
+          <label for="select-origen">Punto de Partida (Origen):</label>
+          <select id="select-origen" class="form-control" aria-required="true">
+            <option value="">Cargando puntos de partida...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="select-destino">Destino en Campus:</label>
+          <select id="select-destino" class="form-control" aria-required="true">
+            <option value="">Cargando destinos...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="select-perfil">Perfil de Accesibilidad:</label>
+          <select id="select-perfil" class="form-control">
+            <option value="silla_ruedas">🦽 Silla de ruedas (evita escaleras y pendientes > 8%)</option>
+            <option value="discapacidad_visual">🦯 Discapacidad visual (prioriza guías podotáctiles y sin baches)</option>
+            <option value="muletas">🩼 Movilidad reducida / Muletas (evita graderíos largos)</option>
+          </select>
+        </div>
+
+        <button id="btn-calcular-ruta" class="btn btn-primary" type="button">
+          <span>🧭</span> Calcular Ruta Accesible
+        </button>
+      </section>
+
+      <!-- Tarjeta de Explicación IA y Alertas de Ruta -->
+      <section id="ai-explanation-card" class="panel-card ai-card" style="display: none;" aria-live="polite">
+        <div class="ai-header">
+          <h3 class="panel-title" style="margin: 0; font-size: 1rem;">
+            <span>🤖</span> Criterio de Accesibilidad IA
+          </h3>
+          <span id="ai-confidence-badge" class="confidence-badge">Alto (94%)</span>
+        </div>
+
+        <p id="ai-explanation-text" class="ai-text"></p>
+        <button id="btn-speak-explanation" class="a11y-btn" style="margin-bottom: 0.75rem;" title="Escuchar en voz alta la explicación">
+          🔊 Escuchar Explicación
+        </button>
+        <div id="ai-update-date" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;"></div>
+
+        <!-- Barreras Evitadas -->
+        <div id="avoided-obstacles-container" style="display: none; margin-bottom: 0.75rem;">
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--danger-color); margin-bottom: 0.3rem;">
+            Barreras evitadas en este trayecto:
+          </h4>
+          <ul id="avoided-obstacles-list" class="avoided-list"></ul>
+        </div>
+
+        <!-- Alertas y Accesos Priorizados -->
+        <div id="route-alerts-container" style="display: none;">
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--secondary-color); margin-bottom: 0.3rem;">
+            Accesos e infraestructuras en ruta:
+          </h4>
+          <ul id="route-alerts-list" class="alerts-list"></ul>
+        </div>
+      </section>
+
+      <!-- Panel de Reporte Colaborativo -->
+      <section class="panel-card">
+        <h3 class="panel-title" style="font-size: 1rem;">
+          <span>📢</span> Reporte Comunitario
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          ¿Detectaste una nueva barrera o una rampa habilitada? Haz clic sobre el mapa o usa el botón para registrarlo.
+        </p>
+        <button id="btn-abrir-reporte" class="btn btn-secondary" type="button">
+          <span>➕</span> Reportar Obstáculo o Acceso
+        </button>
+      </section>
+
+    </aside>
+
+    <!-- Mapa Interactivo Leaflet -->
+    <section class="map-container" aria-label="Mapa interactivo del campus ULEAM">
+      <div id="map" role="application" aria-label="Mapa de navegación accesible"></div>
+    </section>
+
+  </main>
+
+  <!-- Modal para Reportar Obstáculo -->
+  <div id="modal-reporte" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-titulo" class="panel-title" style="margin: 0;">
+          <span>🚩</span> Reportar Novedad en el Campus
+        </h3>
+        <button id="btn-cerrar-modal" class="modal-close-btn" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <form id="form-reporte-obstaculo">
+        <div class="form-group">
+          <label for="reporte-tipo">Tipo de Novedad:</label>
+          <select id="reporte-tipo" class="form-control" required>
+            <option value="escaleras">🪜 Escaleras sin rampa</option>
+            <option value="loma_empinada">⛰️ Pendiente o loma muy pronunciada</option>
+            <option value="bache">🕳️ Bache o adoquín levantado</option>
+            <option value="rampa">♿ Rampa habilitada</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="reporte-mensaje">Descripción / Advertencia:</label>
+          <input type="text" id="reporte-mensaje" class="form-control" placeholder="Ej: Escalón sin rampa junto a biblioteca" required>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <div class="form-group" style="flex: 1;">
+            <label for="reporte-lat">Latitud:</label>
+            <input type="number" step="any" id="reporte-lat" class="form-control" required>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="reporte-lng">Longitud:</label>
+            <input type="number" step="any" id="reporte-lng" class="form-control" required>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 2;">
+            Guardar Reporte
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Scripts de la Aplicación -->
+  <script src="js/api.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/accesibility.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

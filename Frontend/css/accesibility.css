@@ -1,0 +1,80 @@
+/* Estilos específicos de Accesibilidad y Modo Alto Contraste */
+
+/* Soporte para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Modo Alto Contraste */
+body.high-contrast {
+  --primary-color: #ffff00;
+  --primary-hover: #ffff55;
+  --bg-color: #000000;
+  --card-bg: #121212;
+  --text-color: #ffffff;
+  --text-muted: #e2e8f0;
+  --border-color: #ffffff;
+  --focus-ring: #00ffff;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.high-contrast .app-header,
+body.high-contrast .sidebar,
+body.high-contrast .panel-card,
+body.high-contrast .modal-content {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+body.high-contrast .form-control {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+body.high-contrast .btn-primary {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 2px solid #ffffff !important;
+}
+
+body.high-contrast .btn-secondary,
+body.high-contrast .a11y-btn {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+body.high-contrast .ai-card {
+  background-color: #1a1a1a !important;
+  border-left: 6px solid #ffff00 !important;
+}
+
+body.high-contrast .confidence-badge {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Modo Fuente para Dislexia */
+body.font-dyslexic {
+  font-family: "OpenDyslexic", "Comic Sans MS", "Arial", sans-serif !important;
+  letter-spacing: 0.05em;
+  word-spacing: 0.1em;
+}
+
+/* Indicador de foco reforzado */
+:focus-visible {
+  outline: 3px solid var(--focus-ring) !important;
+  outline-offset: 3px !important;
+}
