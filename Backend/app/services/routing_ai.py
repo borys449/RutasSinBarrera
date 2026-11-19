@@ -5,8 +5,12 @@ adaptada al perfil de accesibilidad del usuario.
 """
 
 from datetime import date
+import json
 import math
 from typing import Dict, Any, List, Tuple
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+from urllib.error import URLError
 
 
 def _haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -46,20 +50,104 @@ def _obstacle_conflicts_with_profile(tipo_obstaculo: str, perfil: str) -> bool:
     """Determina si un tipo de obstáculo representa una barrera crítica para el perfil."""
     tipo = tipo_obstaculo.lower()
     if perfil == "silla_ruedas":
-        return tipo in ["escaleras", "loma_empinada", "desnivel", "bache"]
+        return tipo in ["escaleras", "loma_empinada", "desnivel", "bache", "acera_deteriorada", "cruce_inseguro", "otro"]
     elif perfil == "discapacidad_visual":
-        return tipo in ["bache", "escaleras", "obstaculo_aereo", "zanja"]
+        return tipo in ["bache", "escaleras", "obstaculo_aereo", "zanja", "acera_deteriorada", "cruce_inseguro", "otro"]
     elif perfil == "muletas":
-        return tipo in ["escaleras", "loma_empinada", "terreno_irregular"]
-    return tipo in ["escaleras", "bache", "loma_empinada"]
+        return tipo in ["escaleras", "loma_empinada", "terreno_irregular", "acera_deteriorada", "cruce_inseguro", "otro"]
+    return tipo in ["escaleras", "bache", "loma_empinada", "acera_deteriorada", "cruce_inseguro", "otro"]
+
+
+def _obstacle_coordinates(obs: Dict[str, Any]) -> Tuple[float, float]:
+    lat = obs.get("lat")
+    lng = obs.get("lng")
+    coords = obs.get("coordenadas")
+    if lat is not None and lng is not None:
+        return float(lat), float(lng)
+    if isinstance(coords, list) and len(coords) >= 2:
+        return float(coords[0]), float(coords[1])
+    return 0.0, 0.0
+
+
+def _route_conflicts(
+    route_coordinates: List[List[float]],
+    obstaculos: List[Dict[str, Any]],
+    perfil: str,
+    threshold_meters: float = 18.0,
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    conflictos = []
+    textos = []
+
+    for obs in obstaculos:
+        obs_lat, obs_lng = _obstacle_coordinates(obs)
+        if abs(obs_lat) < 1e-9 and abs(obs_lng) < 1e-9:
+            continue
+        tipo = str(obs.get("tipo", "")).lower()
+        if not _obstacle_conflicts_with_profile(tipo, perfil):
+            continue
+
+        distancia = float("inf")
+        for inicio, fin in zip(route_coordinates, route_coordinates[1:]):
+            distancia = min(
+                distancia,
+                _point_to_segment_distance(
+                    obs_lat,
+                    obs_lng,
+                    inicio[0],
+                    inicio[1],
+                    fin[0],
+                    fin[1],
+                ),
+            )
+
+        if distancia <= threshold_meters:
+            conflictos.append(obs)
+            texto = obs.get("mensaje") or obs.get("descripcion") or tipo
+            texto = str(texto).strip()
+            if texto and texto not in textos:
+                textos.append(texto)
+
+    return conflictos, textos
+
+
+def _fetch_pedestrian_route(
+    o_lat: float,
+    o_lng: float,
+    d_lat: float,
+    d_lng: float,
+) -> List[Dict[str, Any]]:
+    """Obtiene alternativas reales de red peatonal desde OpenStreetMap."""
+    base_url = "https://routing.openstreetmap.de/routed-foot/route/v1/driving"
+    coordinates = f"{o_lng},{o_lat};{d_lng},{d_lat}"
+    query = urlencode({
+        "alternatives": "true",
+        "geometries": "geojson",
+        "overview": "full",
+        "steps": "false",
+    })
+    url = f"{base_url}/{coordinates}?{query}"
+    request = Request(url, headers={"User-Agent": "RutasSinBarreras/1.0"})
+
+    try:
+        with urlopen(request, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise RuntimeError(
+            "No se pudo consultar el servicio de rutas peatonales de OpenStreetMap."
+        ) from exc
+
+    if payload.get("code") != "Ok" or not payload.get("routes"):
+        raise RuntimeError(
+            "No existe una ruta peatonal conectada entre los puntos seleccionados."
+        )
+    return payload["routes"]
 
 
 def calcular_ruta_accesible(
     origen: Dict[str, Any],
     destino: Dict[str, Any],
     perfil: str,
-    obstaculos: List[Dict[str, Any]],
-    lugares: List[Dict[str, Any]] = None
+    obstaculos: List[Dict[str, Any]]
 ) -> Dict[str, Any]:
     """
     Calcula coordenadas accesibles entre origen y destino, detecta barreras y
@@ -83,88 +171,51 @@ def calcular_ruta_accesible(
             "ultima_actualizacion": date.today().isoformat()
         }
 
-    # Separar rampas / vías accesibles y obstáculos conflictivos
-    rampas_disponibles = [
-        obs for obs in obstaculos
-        if obs.get("tipo") == "rampa"
-    ]
+    rutas_alternativas = _fetch_pedestrian_route(o_lat, o_lng, d_lat, d_lng)
 
-    conflictos_cercanos = []
-    obstaculos_evitados_textos = []
+    rutas_evaluadas = []
+    for ruta in rutas_alternativas:
+        geometria = ruta.get("geometry", {})
+        coordenadas = geometria.get("coordinates", [])
+        ruta_coordenadas = [
+            [round(float(coord[1]), 6), round(float(coord[0]), 6)]
+            for coord in coordenadas
+        ]
+        if len(ruta_coordenadas) < 2:
+            continue
+        conflictos, textos = _route_conflicts(
+            ruta_coordenadas,
+            obstaculos,
+            perfil_clean,
+        )
+        rutas_evaluadas.append({
+            "coordenadas": ruta_coordenadas,
+            "conflictos": conflictos,
+            "textos": textos,
+            "distancia": float(ruta.get("distance", 0)),
+        })
+
+    if not rutas_evaluadas:
+        raise RuntimeError("El servicio no devolvió una geometría peatonal válida.")
+
+    ruta_seleccionada = min(
+        rutas_evaluadas,
+        key=lambda ruta: (len(ruta["conflictos"]), ruta["distancia"]),
+    )
+    ruta_coordenadas = ruta_seleccionada["coordenadas"]
+    obstaculos_evitados_textos = ruta_seleccionada["textos"]
+
     alertas_en_ruta = []
-
-    # Radio de influencia del pasillo peatonal (aprox 35 metros)
-    corridor_threshold_meters = 35.0
-
     for obs in obstaculos:
-        obs_lat = float(obs.get("lat", 0))
-        obs_lng = float(obs.get("lng", 0))
-        dist = _point_to_segment_distance(obs_lat, obs_lng, o_lat, o_lng, d_lat, d_lng)
-        tipo = obs.get("tipo", "").lower()
-        msg = obs.get("mensaje", "")
-
-        if dist <= corridor_threshold_meters:
-            if _obstacle_conflicts_with_profile(tipo, perfil_clean):
-                conflictos_cercanos.append(obs)
-                resumen = msg.split(":")[1].strip() if ":" in msg else msg
-                if resumen and resumen not in obstaculos_evitados_textos:
-                    obstaculos_evitados_textos.append(resumen)
-            elif tipo == "rampa":
-                alertas_en_ruta.append({
-                    "lat": obs_lat,
-                    "lng": obs_lng,
-                    "tipo": "rampa",
-                    "mensaje": msg
-                })
-
-    # Construcción de waypoints según la presencia de obstáculos
-    # Si hay conflictos o se requiere rampa, desviamos por waypoints seguros
-    waypoints: List[Tuple[float, float]] = [[o_lat, o_lng]]
-
-    # Buscar si alguna rampa sirve como punto intermedio conveniente
-    rampa_util = None
-    for rampa in rampas_disponibles:
-        r_lat = float(rampa["lat"])
-        r_lng = float(rampa["lng"])
-        # Verificar si la rampa queda en el cuadrante entre origen y destino
-        min_lat, max_lat = min(o_lat, d_lat) - 0.001, max(o_lat, d_lat) + 0.001
-        min_lng, max_lng = min(o_lng, d_lng) - 0.001, max(o_lng, d_lng) + 0.001
-        if min_lat <= r_lat <= max_lat and min_lng <= r_lng <= max_lng:
-            rampa_util = rampa
-            break
-
-    # Si tenemos una rampa estratégica o desvío accesible
-    if rampa_util and (perfil_clean in ["silla_ruedas", "muletas"]):
-        r_lat = float(rampa_util["lat"])
-        r_lng = float(rampa_util["lng"])
-        # Punto intermedio 1 (aproximación suave)
-        mid_lat1 = round(o_lat + (r_lat - o_lat) * 0.5, 6)
-        mid_lng1 = round(o_lng + (r_lng - o_lng) * 0.5, 6)
-        waypoints.append([mid_lat1, mid_lng1])
-        waypoints.append([round(r_lat, 6), round(r_lng, 6)])
-
-        # Alerta confirmada
-        if not any(a["lat"] == r_lat and a["lng"] == r_lng for a in alertas_en_ruta):
+        obs_lat, obs_lng = _obstacle_coordinates(obs)
+        tipo = str(obs.get("tipo", "")).lower()
+        if tipo == "rampa":
             alertas_en_ruta.append({
-                "lat": r_lat,
-                "lng": r_lng,
+                "lat": obs_lat,
+                "lng": obs_lng,
                 "tipo": "rampa",
-                "mensaje": rampa_util.get("mensaje", "Rampa habilitada")
+                "mensaje": obs.get("mensaje", "Rampa habilitada"),
             })
-    else:
-        # Generar trazado peatonal ortogonal/suave evitando desniveles
-        # Dividir en 2 o 3 tramos de pasillo universitario
-        mid_lat = round((o_lat + d_lat) / 2.0, 6)
-        mid_lng = round((o_lng + d_lng) / 2.0, 6)
-
-        # Si había obstáculo cerca del centro, aplicar offset lateral suave (5 a 8 metros)
-        offset = 0.00012 if conflictos_cercanos else 0.00004
-        waypoints.append([mid_lat, round(mid_lng - offset, 6)])
-
-    waypoints.append([d_lat, d_lng])
-
-    # Redondear todas las coordenadas
-    ruta_coordenadas = [[round(p[0], 6), round(p[1], 6)] for p in waypoints]
 
     # Generación de la Explicación IA de Accesibilidad
     if perfil_clean == "silla_ruedas":
@@ -192,16 +243,6 @@ def calcular_ruta_accesible(
             f"Trazado experimental para el perfil {perfil_clean}; "
             "la accesibilidad integral no está verificada."
         )
-
-    # Si no hay alertas en ruta pero hay rampas registradas, añadir la más cercana como apoyo
-    if not alertas_en_ruta and rampas_disponibles:
-        primera_rampa = rampas_disponibles[0]
-        alertas_en_ruta.append({
-            "lat": float(primera_rampa["lat"]),
-            "lng": float(primera_rampa["lng"]),
-            "tipo": "rampa",
-            "mensaje": primera_rampa.get("mensaje", "Rampa de soporte habilitada")
-        })
 
     return {
         "ruta_coordenadas": ruta_coordenadas,

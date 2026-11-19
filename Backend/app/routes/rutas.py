@@ -64,13 +64,15 @@ def calcular_ruta(solicitud: SolicitudRuta):
         )
 
     obstaculos = get_all_obstaculos()
-    resultado = calcular_ruta_accesible(
-        origen=origen,
-        destino=destino,
-        perfil=perfiles_motor[perfil],
-        obstaculos=obstaculos,
-        lugares=lugares
-    )
+    try:
+        resultado = calcular_ruta_accesible(
+            origen=origen,
+            destino=destino,
+            perfil=perfiles_motor[perfil],
+            obstaculos=obstaculos
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
 
     coordenadas = resultado["ruta_coordenadas"]
     distancia_m = sum(

@@ -150,11 +150,29 @@
         -0.95205,
         -80.74621
       ],
-      "confirmaciones": 1,
-      "confianza": 75,
-      "nivel_confianza": "75%",
+      "confirmaciones": 2,
+      "confianza": 80,
+      "nivel_confianza": "80%",
       "ultima_actualizacion": "2026-11-19",
       "id": "obs_1"
+    },
+    {
+      "titulo": "tuberias",
+      "tipo": "otro",
+      "severidad": "critico",
+      "descripcion": "destruyeron la calle para arreglar la tuberia",
+      "mensaje": "tuberias: destruyeron la calle para arreglar la tuberia",
+      "lat": -0.95227,
+      "lng": -80.74635,
+      "coordenadas": [
+        -0.95227,
+        -80.74635
+      ],
+      "confirmaciones": 2,
+      "confianza": 80,
+      "nivel_confianza": "80%",
+      "ultima_actualizacion": "2026-11-19",
+      "id": "obs_2"
     }
   ]
 }
