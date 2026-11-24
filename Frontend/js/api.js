@@ -21,6 +21,38 @@ const ApiService = (function () {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
+  function getCurrentUserId() {
+    try {
+      const user = JSON.parse(sessionStorage.getItem(AUTH_USER_KEY) || 'null');
+      return user ? user.id : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function getLocalReports() {
+    const stored = localStorage.getItem('rsb_reportes_locales');
+    if (stored === null) return null;
+    try {
+      const reports = JSON.parse(stored);
+      return Array.isArray(reports) ? reports : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function setLocalReports(reports) {
+    localStorage.setItem('rsb_reportes_locales', JSON.stringify(reports));
+  }
+
+  function markReportOwnership(reports) {
+    const userId = getCurrentUserId();
+    return reports.map((report) => ({
+      ...report,
+      esPropietario: userId !== null && report.creador_id === userId
+    }));
+  }
+
   async function authRequest(path, options = {}) {
     const response = await fetchWithTimeout(`${API_CONFIG.baseUrl}${path}`, {
       ...options,
@@ -325,7 +357,10 @@ const ApiService = (function () {
   async function getReportes() {
     try {
       const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/reportes`, {
-        headers: { 'Accept': 'application/json' }
+        headers: {
+          'Accept': 'application/json',
+          ...authHeaders()
+        }
       });
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
@@ -334,14 +369,10 @@ const ApiService = (function () {
     } catch (err) {
       console.warn("Aviso: Obteniendo reportes desde base local.", err.message);
       API_CONFIG.isOfflineMode = true;
-      // Recuperar de localStorage si el usuario creó reportes previamente
-      const guardados = localStorage.getItem('rsb_reportes_locales');
-      if (guardados) {
-        try {
-          return JSON.parse(guardados);
-        } catch (e) {}
-      }
-      return CAMPUS_MOCK_DATA.reportes;
+      const locales = getLocalReports();
+      return markReportOwnership(
+        locales !== null ? locales : CAMPUS_MOCK_DATA.reportes
+      );
     }
   }
 
@@ -386,19 +417,14 @@ const ApiService = (function () {
         coordenadas: reporteData.coordenadas,
         fechaActualizacion: "Hace un momento",
         confirmaciones: 1,
-        confianza: 75
+        confianza: 75,
+        creador_id: getCurrentUserId()
       };
 
       // Persistir en lista local
-      let lista = CAMPUS_MOCK_DATA.reportes;
-      const guardados = localStorage.getItem('rsb_reportes_locales');
-      if (guardados) {
-        try {
-          lista = JSON.parse(guardados);
-        } catch (e) {}
-      }
+      const lista = getLocalReports() || [];
       lista.unshift(nuevoReporte);
-      localStorage.setItem('rsb_reportes_locales', JSON.stringify(lista));
+      setLocalReports(lista);
 
       return {
         exito: true,
@@ -406,6 +432,80 @@ const ApiService = (function () {
         reporte: nuevoReporte
       };
     }
+  }
+
+  async function actualizarReporte(reporteId, reporteData) {
+    if (!sessionStorage.getItem(AUTH_TOKEN_KEY)) {
+      throw new Error("Inicia sesión para editar un reporte comunitario.");
+    }
+
+    if (reporteId.startsWith('rep_')) {
+      return actualizarReporteLocal(reporteId, reporteData);
+    }
+
+    const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/reportes/${encodeURIComponent(reporteId)}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...authHeaders()
+      },
+      body: JSON.stringify(reporteData)
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `HTTP error ${res.status}`);
+    }
+    const data = await res.json();
+    API_CONFIG.isOfflineMode = false;
+    return data;
+  }
+
+  function actualizarReporteLocal(reporteId, reporteData) {
+    const userId = getCurrentUserId();
+    const reports = getLocalReports() || [];
+    const report = reports.find((item) => item.id === reporteId);
+    if (!report || userId === null || report.creador_id !== userId) {
+      throw new Error("No existe el reporte local o no tienes permiso para editarlo.");
+    }
+    Object.assign(report, reporteData, {
+      fechaActualizacion: "Hace un momento",
+      esPropietario: true
+    });
+    setLocalReports(reports);
+    return { exito: true, reporte };
+  }
+
+  async function eliminarReporte(reporteId) {
+    if (!sessionStorage.getItem(AUTH_TOKEN_KEY)) {
+      throw new Error("Inicia sesión para eliminar un reporte comunitario.");
+    }
+
+    if (reporteId.startsWith('rep_')) {
+      const userId = getCurrentUserId();
+      const reports = getLocalReports() || [];
+      const report = reports.find((item) => item.id === reporteId);
+      if (!report || userId === null || report.creador_id !== userId) {
+        throw new Error("No existe el reporte local o no tienes permiso para eliminarlo.");
+      }
+      setLocalReports(reports.filter((item) => item.id !== reporteId));
+      return { exito: true, mensaje: "Reporte eliminado correctamente." };
+    }
+
+    const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/reportes/${encodeURIComponent(reporteId)}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        ...authHeaders()
+      }
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `HTTP error ${res.status}`);
+    }
+    const data = await res.json();
+    API_CONFIG.isOfflineMode = false;
+    return data;
   }
 
   /**
@@ -462,6 +562,8 @@ const ApiService = (function () {
     calcularRuta,
     getReportes,
     crearReporte,
+    actualizarReporte,
+    eliminarReporte,
     confirmarReporte,
     isOffline
   };

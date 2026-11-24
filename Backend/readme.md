@@ -88,7 +88,8 @@ El backend conserva `/api/obstaculos` para su contrato original y expone además
 
 * `GET /api/lugares` devuelve `id`, `nombre`, `categoria`, `descripcion` y `coordenadas: [lat, lng]`. Los lugares almacenados como `puerta`, `facultad`, `biblioteca` y `punto_interes` se adaptan a las categorías del frontend.
 * `POST /api/rutas/calcular` acepta `{ "origen_id": "...", "destino_id": "...", "perfil_movilidad": "..." }` y devuelve `coordenadasRuta`, `explicacionIA`, `distancia`, `tiempoEstimado`, `barrerasEvitadas` y `pasos`. También acepta el formato anterior con objetos `origen` y `destino`.
-* `GET /api/reportes` adapta los obstáculos al modelo de reportes del frontend. `POST /api/reportes` registra reportes y `POST /api/reportes/{id}/confirmar` incrementa su confiabilidad.
+* `GET /api/reportes` adapta los obstáculos al modelo del frontend e indica si el reporte pertenece a la cuenta autenticada. `POST /api/reportes` registra reportes y `POST /api/reportes/{id}/confirmar` incrementa su confiabilidad.
+* `PUT /api/reportes/{id}` actualiza el título, tipo, severidad y descripción del reporte propio; `DELETE /api/reportes/{id}` lo elimina. Ambas operaciones requieren autenticación y solo las puede realizar la cuenta que lo creó. La ubicación se conserva al editar.
 * Los perfiles `baja_vision`, `baston_andador` y `adulto_mayor` se traducen a los perfiles que entiende el motor actual. El cálculo de ruta es experimental y debe validarse en campo; no representa una red peatonal verificada.
 
 ---
@@ -150,4 +151,4 @@ Las rutas de consulta siguen siendo públicas. Crear o confirmar reportes comuni
 
 El registro acepta `perfil_movilidad`: `silla_ruedas`, `baston_andador`, `baja_vision`, `adulto_mayor` o `estandar`. Las operaciones `POST` para crear o confirmar reportes requieren `Authorization: Bearer <token>`.
 
-Las cuentas y sesiones se guardan en `Backend/app/data/users.sqlite3` (excluido de Git). Las contraseñas se almacenan con PBKDF2-HMAC-SHA256 y sal aleatoria; los tokens de sesión expiran a las 12 horas. En este prototipo el frontend conserva el token en `sessionStorage`; para producción, usa HTTPS, restringe CORS, agrega limitación de intentos y considera cookies `HttpOnly`/`Secure` o un proveedor de identidad.
+Los reportes nuevos guardan internamente el identificador de su creador para validar permisos; los reportes anteriores sin creador no se pueden editar ni eliminar desde la aplicación. Las cuentas y sesiones se guardan en `Backend/app/data/users.sqlite3` (excluido de Git). Las contraseñas se almacenan con PBKDF2-HMAC-SHA256 y sal aleatoria; los tokens de sesión expiran a las 12 horas. En este prototipo el frontend conserva el token en `sessionStorage`; para producción, usa HTTPS, restringe CORS, agrega limitación de intentos y considera cookies `HttpOnly`/`Secure` o un proveedor de identidad.

@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let reportesCache = [];
   let ultimaRutaCalculada = null;
   let usuarioActual = null;
+  let reporteEnEdicion = null;
   let abrirAuth = () => {};
 
   // Elementos DOM Principales
@@ -38,6 +39,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const communityAuthNotice = document.getElementById('community-auth-notice');
   const listaReportesComunidad = document.getElementById('lista-reportes-comunidad');
   const contadorReportes = document.getElementById('contador-reportes');
+  const editReportDialog = document.getElementById('edit-report-dialog');
+  const formEditReport = document.getElementById('form-edit-report');
   const btnGpsReporte = document.getElementById('btn-gps-reporte');
   const btnMapaMiUbicacion = document.getElementById('btn-mapa-mi-ubicacion');
   const btnMapaLimpiar = document.getElementById('btn-mapa-limpiar-ruta');
@@ -139,9 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       );
 
       // 2. Cargar Reportes Comunitarios
-      reportesCache = await ApiService.getReportes();
-      renderizarListaReportes(reportesCache);
-      MapModule.renderReportes(reportesCache, handleConfirmarReporte);
+      await refrescarReportes();
 
       // 3. Actualizar indicador de estado de conexión
       actualizarEstadoConexion();
@@ -150,6 +151,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.error("Error cargando datos iniciales:", err);
       showToast("Error al inicializar la base de datos de accesibilidad", "error");
     }
+  }
+
+  async function refrescarReportes() {
+    reportesCache = await ApiService.getReportes();
+    renderizarListaReportes(reportesCache);
+    MapModule.renderReportes(reportesCache, handleConfirmarReporte);
   }
 
   function actualizarEstadoConexion() {
@@ -434,16 +441,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
 
     try {
-      const res = await ApiService.crearReporte(nuevoReporteData);
+      await ApiService.crearReporte(nuevoReporteData);
 
       // Limpiar formulario
       formReportar.reset();
       coordInput.value = '';
 
       // Recargar lista y mapa
-      reportesCache = await ApiService.getReportes();
-      renderizarListaReportes(reportesCache);
-      MapModule.renderReportes(reportesCache, handleConfirmarReporte);
+      await refrescarReportes();
 
       // Feedback háptico y sonoro
       A11yModule.vibrateFeedback([200]);
@@ -459,6 +464,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       btnGuardar.disabled = false;
       btnGuardar.innerHTML = txtOriginal;
+    }
+  });
+
+  document.getElementById('btn-edit-report-close').addEventListener('click', () => {
+    editReportDialog.close();
+  });
+  document.getElementById('btn-edit-report-cancel').addEventListener('click', () => {
+    editReportDialog.close();
+  });
+  editReportDialog.addEventListener('close', () => {
+    reporteEnEdicion = null;
+  });
+  formEditReport.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!usuarioActual || !reporteEnEdicion?.esPropietario) {
+      showToast("Solo puedes editar los reportes publicados desde tu cuenta.", "error");
+      editReportDialog.close();
+      return;
+    }
+
+    const btnSave = document.getElementById('btn-edit-report-save');
+    btnSave.disabled = true;
+    try {
+      await ApiService.actualizarReporte(reporteEnEdicion.id, {
+        titulo: document.getElementById('edit-reporte-titulo').value.trim(),
+        tipo: document.getElementById('edit-reporte-tipo').value,
+        severidad: document.getElementById('edit-reporte-severidad').value,
+        descripcion: document.getElementById('edit-reporte-descripcion').value.trim()
+      });
+      editReportDialog.close();
+      await refrescarReportes();
+      showToast("Reporte actualizado correctamente.", "success");
+      A11yModule.announce("Reporte actualizado correctamente.");
+    } catch (error) {
+      console.error("Error al actualizar reporte:", error);
+      showToast(error.message || "No se pudo actualizar el reporte.", "error");
+    } finally {
+      btnSave.disabled = false;
+      reporteEnEdicion = null;
     }
   });
 
@@ -497,25 +541,40 @@ document.addEventListener('DOMContentLoaded', async () => {
       let badgeConfianzaClass = 'badge-confidence-high';
       if (rep.confianza < 80) badgeConfianzaClass = 'badge-confidence-mid';
       if (rep.confianza < 60) badgeConfianzaClass = 'badge-confidence-low';
+      const esPropietario = Boolean(usuarioActual && rep.esPropietario);
+      const reporteId = escaparHTML(rep.id);
+      const titulo = escaparHTML(rep.titulo);
+      const tipoSeveridad = escaparHTML(String(rep.severidad || '').toUpperCase());
+      const fecha = escaparHTML(rep.fechaActualizacion);
+      const descripcion = escaparHTML(rep.descripcion);
+      const confianza = escaparHTML(rep.confianza);
+      const lat = escaparHTML(rep.coordenadas[0]);
+      const lng = escaparHTML(rep.coordenadas[1]);
 
       card.innerHTML = `
         <div class="item-header">
-          <h4 class="item-title">⚠️ ${rep.titulo}</h4>
-          <span class="badge ${badgeConfianzaClass}">${rep.confianza}% Confiabilidad</span>
+          <h4 class="item-title">⚠️ ${titulo}</h4>
+          <span class="badge ${badgeConfianzaClass}">${confianza}% Confiabilidad</span>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center; margin: 0.2rem 0;">
-          <span class="badge badge-obstaculo">Severidad: ${rep.severidad.toUpperCase()}</span>
-          <span style="font-size: 0.75rem; color: var(--text-muted);">${rep.fechaActualizacion}</span>
+          <span class="badge badge-obstaculo">Severidad: ${tipoSeveridad}</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">${fecha}</span>
         </div>
-        <p style="font-size: 0.85rem; color: var(--text-main); margin: 0.3rem 0;">${rep.descripcion}</p>
+        <p style="font-size: 0.85rem; color: var(--text-main); margin: 0.3rem 0;">${descripcion}</p>
         <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-          <button type="button" class="btn btn-secondary btn-sm btn-ubicar-reporte" data-lat="${rep.coordenadas[0]}" data-lng="${rep.coordenadas[1]}" style="flex:1;">
+          <button type="button" class="btn btn-secondary btn-sm btn-ubicar-reporte" data-lat="${lat}" data-lng="${lng}" style="flex:1;">
             📍 Ver en Mapa
           </button>
-          <button type="button" class="btn btn-primary btn-sm btn-confirmar-lista" data-id="${rep.id}" style="flex:1;" ${usuarioActual ? '' : 'disabled'}>
+          <button type="button" class="btn btn-primary btn-sm btn-confirmar-lista" data-id="${reporteId}" style="flex:1;" ${usuarioActual ? '' : 'disabled'}>
             ${usuarioActual ? '👍 Confirmar (+5%)' : 'Inicia sesión para confirmar'}
           </button>
         </div>
+        ${esPropietario ? `
+          <div class="report-owner-actions" aria-label="Acciones de tu reporte">
+            <button type="button" class="btn btn-secondary btn-sm btn-editar-reporte" data-id="${reporteId}">Editar</button>
+            <button type="button" class="btn btn-danger btn-sm btn-eliminar-reporte" data-id="${reporteId}">Eliminar</button>
+          </div>
+        ` : ''}
       `;
 
       // Eventos
@@ -530,8 +589,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         await handleConfirmarReporte(rep.id);
       };
 
+      const btnEditar = card.querySelector('.btn-editar-reporte');
+      if (btnEditar) {
+        btnEditar.addEventListener('click', () => abrirEdicionReporte(rep));
+      }
+
+      const btnEliminar = card.querySelector('.btn-eliminar-reporte');
+      if (btnEliminar) {
+        btnEliminar.addEventListener('click', () => handleEliminarReporte(rep));
+      }
+
       listaReportesComunidad.appendChild(card);
     });
+  }
+
+  function escaparHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
+  }
+
+  function abrirEdicionReporte(reporte) {
+    if (!usuarioActual || !reporte.esPropietario) {
+      showToast("Solo puedes editar los reportes publicados desde tu cuenta.", "error");
+      return;
+    }
+    reporteEnEdicion = reporte;
+    document.getElementById('edit-reporte-titulo').value = reporte.titulo;
+    const tipoInput = document.getElementById('edit-reporte-tipo');
+    tipoInput.value = Array.from(tipoInput.options).some(option => option.value === reporte.tipo)
+      ? reporte.tipo
+      : 'otro';
+    const severidadInput = document.getElementById('edit-reporte-severidad');
+    severidadInput.value = Array.from(severidadInput.options).some(option => option.value === reporte.severidad)
+      ? reporte.severidad
+      : 'moderado';
+    document.getElementById('edit-reporte-descripcion').value = reporte.descripcion;
+    editReportDialog.showModal();
+  }
+
+  async function handleEliminarReporte(reporte) {
+    if (!usuarioActual || !reporte.esPropietario) {
+      showToast("Solo puedes eliminar los reportes publicados desde tu cuenta.", "error");
+      return;
+    }
+    if (!window.confirm(`¿Eliminar el reporte "${reporte.titulo}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    try {
+      await ApiService.eliminarReporte(reporte.id);
+      await refrescarReportes();
+      showToast("Reporte eliminado correctamente.", "success");
+      A11yModule.announce("Reporte eliminado correctamente.");
+    } catch (error) {
+      console.error("Error al eliminar reporte:", error);
+      showToast(error.message || "No se pudo eliminar el reporte.", "error");
+    }
   }
 
   async function handleConfirmarReporte(reporteId) {
@@ -543,9 +660,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       const res = await ApiService.confirmarReporte(reporteId);
-      reportesCache = await ApiService.getReportes();
-      renderizarListaReportes(reportesCache);
-      MapModule.renderReportes(reportesCache, handleConfirmarReporte);
+      await refrescarReportes();
 
       showToast(`¡Gracias! Confiabilidad actualizada a ${res.nuevoNivelConfianza}%`, "success");
       A11yModule.announce("Reporte confirmado con éxito.");
@@ -742,6 +857,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         aplicarPerfilMovilidad(usuarioActual.perfil_movilidad || 'estandar');
         renderAuthState();
+        await refrescarReportes();
         loginForm.reset();
         dialog.close();
         showToast(`Bienvenido, ${usuarioActual.nombre}.`, 'success');
@@ -766,6 +882,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         aplicarPerfilMovilidad(usuarioActual.perfil_movilidad || 'estandar');
         renderAuthState();
+        await refrescarReportes();
         registerForm.reset();
         dialog.close();
         showToast(`Cuenta creada. ¡Bienvenido, ${usuarioActual.nombre}!`, 'success');
@@ -785,6 +902,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('Sesión cerrada en este navegador.', 'info');
       } finally {
         usuarioActual = null;
+        await refrescarReportes();
         renderAuthState();
       }
     });

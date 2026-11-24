@@ -99,13 +99,15 @@ def iniciar_sesion(credenciales: Credenciales):
     return _respuesta_sesion(user)
 
 
-def usuario_autenticado(
+def usuario_opcional(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
-) -> Dict:
-    if credentials is None or credentials.scheme.lower() != "bearer":
+) -> Optional[Dict]:
+    if credentials is None:
+        return None
+    if credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Inicia sesión para realizar esta acción.",
+            detail="El esquema de autenticación no es válido.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -114,6 +116,18 @@ def usuario_autenticado(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="La sesión expiró o no es válida. Inicia sesión nuevamente.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+def usuario_autenticado(
+    user: Optional[Dict] = Depends(usuario_opcional),
+) -> Dict:
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inicia sesión para realizar esta acción.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user

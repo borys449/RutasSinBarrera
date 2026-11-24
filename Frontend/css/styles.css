@@ -265,6 +265,17 @@ body {
   margin-bottom: 0.35rem;
 }
 
+.report-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.report-edit-actions .btn {
+  flex: 1;
+}
+
 .auth-message {
   margin: 0.75rem 0;
   padding: 0.65rem;
@@ -788,6 +799,13 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+}
+
+.report-owner-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
 }
 
 .item-title {

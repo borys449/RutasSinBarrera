@@ -22,6 +22,7 @@ Interfaz web moderna, intuitiva y accesible para el sistema inteligente de rutas
    - Cálculo del nivel de confianza dinámico mediante confirmaciones comunitarias.
    - Fecha de última actualización visible en cada reporte.
    - El formulario de publicación y las confirmaciones requieren iniciar sesión; la API también rechaza esas operaciones sin una sesión válida. Explorar rutas y lugares sigue siendo público.
+   - La persona que publicó un reporte puede editar sus detalles o eliminarlo; la API verifica que la cuenta autenticada sea su creadora. La ubicación se conserva al editar.
 
 4. **Cuentas de usuario**:
    - Registro e inicio de sesión conectados a la API, con sesión mantenida durante la pestaña actual del navegador.
