@@ -68,8 +68,54 @@
         </svg>
         <span class="btn-text-label">Voz</span>
       </button>
+      <div class="auth-actions">
+        <span id="auth-user-name" class="auth-user-name" hidden></span>
+        <button type="button" id="btn-auth-open" class="btn btn-primary btn-sm">Iniciar sesión</button>
+        <button type="button" id="btn-auth-logout" class="btn btn-secondary btn-sm" hidden>Cerrar sesión</button>
+      </div>
     </nav>
   </header>
+
+  <dialog id="auth-dialog" class="auth-dialog" aria-labelledby="auth-title">
+    <div class="auth-dialog-header">
+      <h2 id="auth-title">Iniciar sesión</h2>
+      <button type="button" id="btn-auth-close" class="auth-close" aria-label="Cerrar ventana">×</button>
+    </div>
+    <p class="auth-dialog-intro">Explora rutas sin cuenta. Inicia sesión para publicar o confirmar reportes comunitarios.</p>
+    <p id="auth-message" class="auth-message" role="alert" hidden></p>
+
+    <form id="form-login" class="auth-form">
+      <label class="form-label" for="login-correo">Correo electrónico</label>
+      <input id="login-correo" class="form-control" type="email" autocomplete="email" maxlength="254" required>
+      <label class="form-label" for="login-password">Contraseña</label>
+      <input id="login-password" class="form-control" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+      <button type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+    </form>
+
+    <form id="form-registro" class="auth-form" hidden>
+      <label class="form-label" for="registro-nombre">Nombre</label>
+      <input id="registro-nombre" class="form-control" type="text" autocomplete="name" minlength="2" maxlength="80" required>
+      <label class="form-label" for="registro-correo">Correo electrónico</label>
+      <input id="registro-correo" class="form-control" type="email" autocomplete="email" maxlength="254" required>
+      <label class="form-label" for="registro-perfil-movilidad">Perfil de movilidad</label>
+      <select id="registro-perfil-movilidad" class="form-control" required>
+        <option value="" selected disabled>Selecciona tu perfil de movilidad</option>
+        <option value="silla_ruedas">Silla de ruedas</option>
+        <option value="baston_andador">Bastón / Andador</option>
+        <option value="baja_vision">Baja visión / Ceguera</option>
+        <option value="adulto_mayor">Adulto mayor</option>
+        <option value="estandar">Movilidad general</option>
+      </select>
+      <label class="form-label" for="registro-password">Contraseña (mínimo 8 caracteres)</label>
+      <input id="registro-password" class="form-control" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+      <button type="submit" class="btn btn-primary btn-block">Crear cuenta</button>
+    </form>
+
+    <p class="auth-switch">
+      <span id="auth-switch-label">¿No tienes cuenta?</span>
+      <button type="button" id="btn-auth-switch" class="auth-switch-button">Regístrate</button>
+    </p>
+  </dialog>
 
   <!-- Layout Principal de la Aplicación -->
   <div class="app-layout">
@@ -248,7 +294,12 @@
             Ayuda a la comunidad reportando barreras de accesibilidad como escaleras rotas, ascensores fuera de servicio o aceras bloqueadas.
           </p>
 
-          <form id="form-reportar-obstaculo" novalidate>
+          <div id="report-login-required" class="auth-required" role="note">
+            <p>Para publicar un reporte necesitas iniciar sesión o crear una cuenta.</p>
+            <button type="button" id="btn-report-login" class="btn btn-primary btn-sm">Iniciar sesión para reportar</button>
+          </div>
+
+          <form id="form-reportar-obstaculo" novalidate hidden>
             <div class="form-group">
               <label for="reporte-titulo" class="form-label">Título del Reporte</label>
               <input type="text" id="reporte-titulo" class="form-control" placeholder="Ej. Ascensor Bloqueado Edificio B" required minlength="4">
@@ -321,6 +372,10 @@
           <p style="font-size: 0.8rem; color: var(--text-muted);">
             Cada reporte cuenta con fecha de actualización y cálculo de confiabilidad basado en confirmaciones de la comunidad.
           </p>
+          <div id="community-auth-notice" class="auth-required" role="note">
+            <p>Para confirmar que un reporte sigue vigente necesitas iniciar sesión.</p>
+            <button type="button" id="btn-community-login" class="btn btn-primary btn-sm">Iniciar sesión para confirmar</button>
+          </div>
           <div id="lista-reportes-comunidad" class="card-list" aria-label="Lista de reportes comunitarios">
             <!-- Se llena dinámicamente -->
           </div>
@@ -329,9 +384,30 @@
         <!-- ================= PANEL 5: MI PERFIL Y PREFERENCIAS ================= -->
         <section id="panel-perfil" class="tab-panel" role="tabpanel" aria-labelledby="tab-perfil">
           <h3 style="font-size: 1rem; font-weight: 700;">Preferencias de Movilidad e Interacción</h3>
+
+          <div id="profile-account-info" class="profile-account-info" hidden>
+            <h4>Datos de tu cuenta</h4>
+            <dl>
+              <div>
+                <dt>Nombre</dt>
+                <dd id="profile-account-name"></dd>
+              </div>
+              <div>
+                <dt>Correo electrónico</dt>
+                <dd id="profile-account-email"></dd>
+              </div>
+              <div>
+                <dt>Perfil de movilidad</dt>
+                <dd id="profile-account-mobility"></dd>
+              </div>
+            </dl>
+          </div>
+          <p id="profile-signin-note" class="auth-required" role="note">
+            Inicia sesión para ver los datos de tu cuenta.
+          </p>
           
           <div class="form-group">
-            <label for="perfil-usuario-defecto" class="form-label">Perfil de Movilidad Predeterminado</label>
+            <label for="perfil-usuario-defecto" class="form-label">Mi perfil de movilidad</label>
             <select id="perfil-usuario-defecto" class="form-control">
               <option value="silla_ruedas">Silla de Ruedas</option>
               <option value="baston_andador">Bastón / Andador</option>
@@ -339,6 +415,7 @@
               <option value="adulto_mayor">Adulto Mayor</option>
               <option value="estandar">Movilidad General</option>
             </select>
+            <p id="perfil-movilidad-resumen" class="profile-summary" aria-live="polite"></p>
           </div>
 
           <div class="form-group">

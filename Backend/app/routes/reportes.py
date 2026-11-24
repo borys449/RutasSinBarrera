@@ -1,5 +1,5 @@
 from datetime import date
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Tuple
 from app.data.storage import (
@@ -7,6 +7,7 @@ from app.data.storage import (
     increment_obstaculo_confirmation,
     save_new_obstaculo
 )
+from app.routes.auth import usuario_autenticado
 
 router = APIRouter(prefix="/api/obstaculos", tags=["Obstáculos y Reportes"])
 reportes_router = APIRouter(prefix="/api/reportes", tags=["Reportes del frontend"])
@@ -64,7 +65,10 @@ def listar_obstaculos():
 
 
 @router.post("", response_model=Obstaculo, status_code=status.HTTP_201_CREATED)
-def reportar_obstaculo(obstaculo_in: ObstaculoCrear):
+def reportar_obstaculo(
+    obstaculo_in: ObstaculoCrear,
+    _usuario: Dict = Depends(usuario_autenticado),
+):
     """
     Registra un nuevo obstáculo o reporte comunitario de accesibilidad
     y lo persiste en la base de datos campus_mock.json.
@@ -85,7 +89,10 @@ def listar_reportes_frontend():
 
 
 @reportes_router.post("", status_code=status.HTTP_201_CREATED)
-def crear_reporte_frontend(reporte: ReporteCrearFrontend):
+def crear_reporte_frontend(
+    reporte: ReporteCrearFrontend,
+    _usuario: Dict = Depends(usuario_autenticado),
+):
     lat, lng = reporte.coordenadas
     datos = {
         "titulo": reporte.titulo,
@@ -110,7 +117,10 @@ def crear_reporte_frontend(reporte: ReporteCrearFrontend):
 
 
 @reportes_router.post("/{reporte_id}/confirmar", response_model=ConfirmacionFrontend)
-def confirmar_reporte_frontend(reporte_id: str):
+def confirmar_reporte_frontend(
+    reporte_id: str,
+    _usuario: Dict = Depends(usuario_autenticado),
+):
     obstaculo = increment_obstaculo_confirmation(reporte_id)
     if obstaculo is None:
         raise HTTPException(status_code=404, detail=f"No existe el reporte '{reporte_id}'")

@@ -1,2 +1,11 @@
+# Configuración y dependencias
 config.bat
-node_modules
+node_modules/
+
+# Base de datos local
+Backend/app/data/users.sqlite3
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+*.pyo

@@ -137,3 +137,17 @@ Los puntos de encuentro y el C.A.C. se retiraron del mapa por no contar con un p
    ```
 4. Verificar documentación interactiva de endpoints en el navegador:
    * `http://127.0.0.1:8000/docs`
+
+## 5. Registro e inicio de sesión
+
+Las rutas de consulta siguen siendo públicas. Crear o confirmar reportes comunitarios requiere una sesión iniciada.
+
+* `POST /api/auth/registro`: recibe `nombre`, `correo` y `password`; crea la cuenta y devuelve un token de acceso.
+* `POST /api/auth/login`: recibe `correo` y `password`; devuelve un token de acceso.
+* `GET /api/auth/me`: devuelve los datos de la cuenta actual, incluido `perfil_movilidad`. Requiere `Authorization: Bearer <token>`.
+* `PATCH /api/auth/me`: actualiza el `perfil_movilidad` de la cuenta autenticada.
+* `POST /api/auth/logout`: invalida la sesión actual.
+
+El registro acepta `perfil_movilidad`: `silla_ruedas`, `baston_andador`, `baja_vision`, `adulto_mayor` o `estandar`. Las operaciones `POST` para crear o confirmar reportes requieren `Authorization: Bearer <token>`.
+
+Las cuentas y sesiones se guardan en `Backend/app/data/users.sqlite3` (excluido de Git). Las contraseñas se almacenan con PBKDF2-HMAC-SHA256 y sal aleatoria; los tokens de sesión expiran a las 12 horas. En este prototipo el frontend conserva el token en `sessionStorage`; para producción, usa HTTPS, restringe CORS, agrega limitación de intentos y considera cookies `HttpOnly`/`Secure` o un proveedor de identidad.

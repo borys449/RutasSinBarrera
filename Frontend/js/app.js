@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   let lugaresCache = [];
   let reportesCache = [];
   let ultimaRutaCalculada = null;
+  let usuarioActual = null;
+  let abrirAuth = () => {};
 
   // Elementos DOM Principales
   const tabButtons = document.querySelectorAll('.tab-btn');
@@ -32,6 +34,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const filtroCategoria = document.getElementById('filtro-categoria-lugares');
   const inputBuscarLugar = document.getElementById('buscar-lugar');
   const formReportar = document.getElementById('form-reportar-obstaculo');
+  const reportLoginNotice = document.getElementById('report-login-required');
+  const communityAuthNotice = document.getElementById('community-auth-notice');
   const listaReportesComunidad = document.getElementById('lista-reportes-comunidad');
   const contadorReportes = document.getElementById('contador-reportes');
   const btnGpsReporte = document.getElementById('btn-gps-reporte');
@@ -57,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Configurar oyentes de eventos
   setupAppEvents();
+  await setupAuthEvents();
 
   // ==========================================================================
   // 2. GESTIÓN DE PESTAÑAS (TABS)
@@ -367,6 +372,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   formReportar.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!usuarioActual) {
+      abrirAuth('login');
+      showToast("Inicia sesión para publicar reportes comunitarios.", "info");
+      return;
+    }
 
     const tituloInput = document.getElementById('reporte-titulo');
     const tipoInput = document.getElementById('reporte-tipo');
@@ -445,7 +455,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (err) {
       console.error("Error al crear reporte:", err);
-      showToast("Ocurrió un error al enviar el reporte", "error");
+      showToast(err.message || "Ocurrió un error al enviar el reporte", "error");
     } finally {
       btnGuardar.disabled = false;
       btnGuardar.innerHTML = txtOriginal;
@@ -502,8 +512,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button type="button" class="btn btn-secondary btn-sm btn-ubicar-reporte" data-lat="${rep.coordenadas[0]}" data-lng="${rep.coordenadas[1]}" style="flex:1;">
             📍 Ver en Mapa
           </button>
-          <button type="button" class="btn btn-primary btn-sm btn-confirmar-lista" data-id="${rep.id}" style="flex:1;">
-            👍 Confirmar (+5%)
+          <button type="button" class="btn btn-primary btn-sm btn-confirmar-lista" data-id="${rep.id}" style="flex:1;" ${usuarioActual ? '' : 'disabled'}>
+            ${usuarioActual ? '👍 Confirmar (+5%)' : 'Inicia sesión para confirmar'}
           </button>
         </div>
       `;
@@ -525,6 +535,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function handleConfirmarReporte(reporteId) {
+    if (!usuarioActual) {
+      abrirAuth('login');
+      showToast("Inicia sesión para confirmar reportes comunitarios.", "info");
+      return;
+    }
+
     try {
       const res = await ApiService.confirmarReporte(reporteId);
       reportesCache = await ApiService.getReportes();
@@ -535,7 +551,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       A11yModule.announce("Reporte confirmado con éxito.");
     } catch (err) {
       console.error("Error al confirmar reporte:", err);
-      showToast("No se pudo confirmar el reporte", "error");
+      showToast(err.message || "No se pudo confirmar el reporte", "error");
     }
   }
 
@@ -548,15 +564,56 @@ document.addEventListener('DOMContentLoaded', async () => {
   const checkVibracion = document.getElementById('check-vibracion');
   const checkVozAuto = document.getElementById('check-voz-automatica');
 
-  btnGuardarPerfil.addEventListener('click', () => {
+  const descripcionesPerfil = {
+    silla_ruedas: 'Las rutas priorizarán evitar escaleras y buscar recorridos adecuados para silla de ruedas.',
+    baston_andador: 'Las rutas usarán el perfil Bastón / Andador para priorizar recorridos acordes a tu movilidad.',
+    baja_vision: 'Las rutas usarán el perfil Baja Visión / Ceguera para priorizar indicaciones y recorridos adecuados.',
+    adulto_mayor: 'Las rutas usarán el perfil Adulto Mayor para priorizar recorridos acordes a tus preferencias.',
+    estandar: 'Las rutas usarán el perfil de movilidad general.'
+  };
+
+  function actualizarResumenPerfil(perfil) {
+    const resumen = document.getElementById('perfil-movilidad-resumen');
+    resumen.textContent = descripcionesPerfil[perfil] || descripcionesPerfil.estandar;
+  }
+
+  function aplicarPerfilMovilidad(perfil) {
+    const existePerfil = Array.from(perfilDefectoSelect.options)
+      .some((option) => option.value === perfil);
+    if (!existePerfil) return;
+
+    perfilDefectoSelect.value = perfil;
+    selectPerfil.value = perfil;
+    localStorage.setItem('rsb_perfil_defecto', perfil);
+    actualizarResumenPerfil(perfil);
+    if (usuarioActual) {
+      const option = Array.from(perfilDefectoSelect.options)
+        .find((item) => item.value === perfil);
+      document.getElementById('profile-account-mobility').textContent =
+        option ? option.textContent : 'Movilidad general';
+    }
+  }
+
+  perfilDefectoSelect.addEventListener('change', () => {
+    actualizarResumenPerfil(perfilDefectoSelect.value);
+  });
+
+  btnGuardarPerfil.addEventListener('click', async () => {
     A11yModule.setHapticEnabled(checkVibracion.checked);
     A11yModule.setTtsEnabled(checkVozAuto.checked);
 
-    if (perfilDefectoSelect) {
-      selectPerfil.value = perfilDefectoSelect.value;
-      localStorage.setItem('rsb_perfil_defecto', perfilDefectoSelect.value);
+    const perfil = perfilDefectoSelect.value;
+    if (usuarioActual) {
+      try {
+        usuarioActual = await ApiService.actualizarPerfilMovilidad(perfil);
+      } catch (error) {
+        aplicarPerfilMovilidad(usuarioActual.perfil_movilidad || 'estandar');
+        showToast(error.message || 'No se pudo guardar tu perfil en la cuenta.', 'error');
+        return;
+      }
     }
 
+    aplicarPerfilMovilidad(perfil);
     A11yModule.vibrateFeedback([100]);
     showToast("Preferencias de accesibilidad guardadas", "success");
     A11yModule.announce("Preferencias guardadas.");
@@ -568,6 +625,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (perfilDefectoSelect) perfilDefectoSelect.value = perfilGuardado;
     if (selectPerfil) selectPerfil.value = perfilGuardado;
   }
+  if (usuarioActual) {
+    aplicarPerfilMovilidad(usuarioActual.perfil_movilidad || 'estandar');
+  }
+  actualizarResumenPerfil(perfilDefectoSelect.value);
 
   // ==========================================================================
   // 8. CONTROLES DEL MAPA Y MÓVIL
@@ -596,7 +657,148 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ==========================================================================
-  // 9. HELPERS ACCESIBLES Y VALIDACIONES
+  // 9. REGISTRO E INICIO DE SESIÓN
+  // ==========================================================================
+
+  async function setupAuthEvents() {
+    const dialog = document.getElementById('auth-dialog');
+    const btnOpen = document.getElementById('btn-auth-open');
+    const btnClose = document.getElementById('btn-auth-close');
+    const btnSwitch = document.getElementById('btn-auth-switch');
+    const btnLogout = document.getElementById('btn-auth-logout');
+    const loginForm = document.getElementById('form-login');
+    const registerForm = document.getElementById('form-registro');
+    const message = document.getElementById('auth-message');
+    const title = document.getElementById('auth-title');
+    const switchLabel = document.getElementById('auth-switch-label');
+    const userName = document.getElementById('auth-user-name');
+    const accountInfo = document.getElementById('profile-account-info');
+    const profileSigninNote = document.getElementById('profile-signin-note');
+
+    function renderAuthState() {
+      const signedIn = Boolean(usuarioActual);
+      userName.textContent = signedIn ? `Hola, ${usuarioActual.nombre}` : '';
+      userName.hidden = !signedIn;
+      btnOpen.hidden = signedIn;
+      btnLogout.hidden = !signedIn;
+      formReportar.hidden = !signedIn;
+      reportLoginNotice.hidden = signedIn;
+      communityAuthNotice.hidden = signedIn;
+      accountInfo.hidden = !signedIn;
+      profileSigninNote.hidden = signedIn;
+      if (signedIn) {
+        document.getElementById('profile-account-name').textContent = usuarioActual.nombre;
+        document.getElementById('profile-account-email').textContent = usuarioActual.correo;
+        const mobilityOption = Array.from(
+          document.getElementById('perfil-usuario-defecto').options
+        ).find((option) => option.value === usuarioActual.perfil_movilidad);
+        document.getElementById('profile-account-mobility').textContent =
+          mobilityOption ? mobilityOption.textContent : 'Movilidad general';
+      }
+      renderizarListaReportes(reportesCache);
+      MapModule.renderReportes(reportesCache, handleConfirmarReporte);
+    }
+
+    function mostrarMensaje(texto) {
+      message.textContent = texto;
+      message.hidden = false;
+    }
+
+    function abrirDialogoAuth(mode) {
+      const isRegister = mode === 'register';
+      loginForm.hidden = isRegister;
+      registerForm.hidden = !isRegister;
+      title.textContent = isRegister ? 'Crear cuenta' : 'Iniciar sesión';
+      switchLabel.textContent = isRegister ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?';
+      btnSwitch.textContent = isRegister ? 'Inicia sesión' : 'Regístrate';
+      message.hidden = true;
+      if (!dialog.open) dialog.showModal();
+      const firstInput = (isRegister ? registerForm : loginForm).querySelector('input');
+      if (firstInput) firstInput.focus();
+    }
+
+    abrirAuth = abrirDialogoAuth;
+    btnOpen.addEventListener('click', () => abrirDialogoAuth('login'));
+    document.getElementById('btn-report-login').addEventListener('click', () => {
+      abrirDialogoAuth('login');
+    });
+    document.getElementById('btn-community-login').addEventListener('click', () => {
+      abrirDialogoAuth('login');
+    });
+    btnClose.addEventListener('click', () => dialog.close());
+    btnSwitch.addEventListener('click', () => {
+      abrirDialogoAuth(registerForm.hidden ? 'register' : 'login');
+    });
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      message.hidden = true;
+      const submit = loginForm.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      try {
+        usuarioActual = await ApiService.iniciarSesion({
+          correo: document.getElementById('login-correo').value.trim(),
+          password: document.getElementById('login-password').value
+        });
+        aplicarPerfilMovilidad(usuarioActual.perfil_movilidad || 'estandar');
+        renderAuthState();
+        loginForm.reset();
+        dialog.close();
+        showToast(`Bienvenido, ${usuarioActual.nombre}.`, 'success');
+      } catch (error) {
+        mostrarMensaje(error.message || 'No se pudo iniciar sesión.');
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    registerForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      message.hidden = true;
+      const submit = registerForm.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      try {
+        usuarioActual = await ApiService.registrarUsuario({
+          nombre: document.getElementById('registro-nombre').value.trim(),
+          correo: document.getElementById('registro-correo').value.trim(),
+          perfil_movilidad: document.getElementById('registro-perfil-movilidad').value,
+          password: document.getElementById('registro-password').value
+        });
+        aplicarPerfilMovilidad(usuarioActual.perfil_movilidad || 'estandar');
+        renderAuthState();
+        registerForm.reset();
+        dialog.close();
+        showToast(`Cuenta creada. ¡Bienvenido, ${usuarioActual.nombre}!`, 'success');
+      } catch (error) {
+        mostrarMensaje(error.message || 'No se pudo crear la cuenta.');
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    btnLogout.addEventListener('click', async () => {
+      try {
+        await ApiService.cerrarSesion();
+        showToast('Sesión cerrada.', 'info');
+      } catch (error) {
+        console.warn('La sesión se cerró en este navegador, pero el servidor no respondió.', error);
+        showToast('Sesión cerrada en este navegador.', 'info');
+      } finally {
+        usuarioActual = null;
+        renderAuthState();
+      }
+    });
+
+    try {
+      usuarioActual = await ApiService.obtenerUsuarioActual();
+    } catch (error) {
+      console.warn('No se pudo validar la sesión guardada.', error);
+    }
+    renderAuthState();
+  }
+
+  // ==========================================================================
+  // 10. HELPERS ACCESIBLES Y VALIDACIONES
   // ==========================================================================
 
   function marcarInvalido(inputEl, errorId, mensaje) {
@@ -641,10 +843,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (tipo === 'error') icono = '❌';
     if (tipo === 'warning') icono = '⚠️';
 
-    toast.innerHTML = `
-      <span>${icono}</span>
-      <span>${mensaje}</span>
-    `;
+    const icon = document.createElement('span');
+    icon.textContent = icono;
+    const text = document.createElement('span');
+    text.textContent = mensaje;
+    toast.append(icon, text);
 
     container.appendChild(toast);
 

@@ -13,6 +13,105 @@ const ApiService = (function () {
     timeoutMs: 3500,
     isOfflineMode: false
   };
+  const AUTH_TOKEN_KEY = 'rsb_auth_token';
+  const AUTH_USER_KEY = 'rsb_auth_user';
+
+  function authHeaders() {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  async function authRequest(path, options = {}) {
+    const response = await fetchWithTimeout(`${API_CONFIG.baseUrl}${path}`, {
+      ...options,
+      headers: {
+        'Accept': 'application/json',
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...options.headers
+      }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.detail || `Error HTTP ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+    return data;
+  }
+
+  function saveSession(session) {
+    sessionStorage.setItem(AUTH_TOKEN_KEY, session.access_token);
+    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.usuario));
+    API_CONFIG.isOfflineMode = false;
+    return session.usuario;
+  }
+
+  async function registrarUsuario(userData) {
+    const session = await authRequest('/auth/registro', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+    return saveSession(session);
+  }
+
+  async function iniciarSesion(credentials) {
+    const session = await authRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+    return saveSession(session);
+  }
+
+  async function actualizarPerfilMovilidad(perfilMovilidad) {
+    const user = await authRequest('/auth/me', {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ perfil_movilidad: perfilMovilidad })
+    });
+    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    return user;
+  }
+
+  async function obtenerUsuarioActual() {
+    if (!sessionStorage.getItem(AUTH_TOKEN_KEY)) return null;
+    try {
+      const user = await authRequest('/auth/me', { headers: authHeaders() });
+      sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+      API_CONFIG.isOfflineMode = false;
+      return user;
+    } catch (error) {
+      if (error.status === 401) {
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
+        sessionStorage.removeItem(AUTH_USER_KEY);
+        return null;
+      }
+      API_CONFIG.isOfflineMode = true;
+      const cachedUser = sessionStorage.getItem(AUTH_USER_KEY);
+      if (cachedUser) {
+        try {
+          return JSON.parse(cachedUser);
+        } catch (parseError) {
+          sessionStorage.removeItem(AUTH_USER_KEY);
+        }
+      }
+      throw error;
+    }
+  }
+
+  async function cerrarSesion() {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    try {
+      if (token) {
+        await authRequest('/auth/logout', {
+          method: 'POST',
+          headers: authHeaders()
+        });
+      }
+    } finally {
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+      sessionStorage.removeItem(AUTH_USER_KEY);
+    }
+  }
 
   /**
    * Pines de referencia del campus. Las ubicaciones de Google Maps/OSM
@@ -173,7 +272,12 @@ const ApiService = (function () {
       const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/lugares`, {
         headers: { 'Accept': 'application/json' }
       });
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const error = new Error(data.detail || `HTTP error ${res.status}`);
+        error.status = res.status;
+        throw error;
+      }
       const data = await res.json();
       API_CONFIG.isOfflineMode = false;
       return data;
@@ -245,20 +349,30 @@ const ApiService = (function () {
    * Envía un nuevo reporte comunitario de obstáculo.
    */
   async function crearReporte(reporteData) {
+    if (!sessionStorage.getItem(AUTH_TOKEN_KEY)) {
+      throw new Error("Inicia sesión para publicar un reporte comunitario.");
+    }
     try {
       const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/reportes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          ...authHeaders()
         },
         body: JSON.stringify(reporteData)
       });
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const error = new Error(data.detail || `HTTP error ${res.status}`);
+        error.status = res.status;
+        throw error;
+      }
       const data = await res.json();
       API_CONFIG.isOfflineMode = false;
       return data;
     } catch (err) {
+      if (err.status) throw err;
       console.warn("Aviso: Guardando reporte localmente por modo offline.", err.message);
       API_CONFIG.isOfflineMode = true;
 
@@ -298,13 +412,23 @@ const ApiService = (function () {
    * Confirma un reporte de la comunidad para incrementar su confiabilidad.
    */
   async function confirmarReporte(reporteId) {
+    if (!sessionStorage.getItem(AUTH_TOKEN_KEY)) {
+      throw new Error("Inicia sesión para confirmar un reporte comunitario.");
+    }
     try {
       const res = await fetchWithTimeout(`${API_CONFIG.baseUrl}/reportes/${reporteId}/confirmar`, {
-        method: 'POST'
+        method: 'POST',
+        headers: authHeaders()
       });
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const error = new Error(data.detail || `HTTP error ${res.status}`);
+        error.status = res.status;
+        throw error;
+      }
       return await res.json();
     } catch (err) {
+      if (err.status) throw err;
       // Manejo local offline
       let lista = CAMPUS_MOCK_DATA.reportes;
       const guardados = localStorage.getItem('rsb_reportes_locales');
@@ -329,6 +453,11 @@ const ApiService = (function () {
   }
 
   return {
+    registrarUsuario,
+    iniciarSesion,
+    actualizarPerfilMovilidad,
+    obtenerUsuarioActual,
+    cerrarSesion,
     getLugares,
     calcularRuta,
     getReportes,

@@ -173,6 +173,42 @@
       "nivel_confianza": "80%",
       "ultima_actualizacion": "2026-11-19",
       "id": "obs_2"
+    },
+    {
+      "titulo": "alcantarilla rota",
+      "tipo": "otro",
+      "severidad": "leve",
+      "descripcion": "la alcantarilla esta rota y el agua se esta desbordando de ella",
+      "mensaje": "alcantarilla rota: la alcantarilla esta rota y el agua se esta desbordando de ella",
+      "lat": -0.95312,
+      "lng": -80.7459,
+      "coordenadas": [
+        -0.95312,
+        -80.7459
+      ],
+      "confirmaciones": 2,
+      "confianza": 80,
+      "nivel_confianza": "80%",
+      "ultima_actualizacion": "2026-11-24",
+      "id": "obs_3"
+    },
+    {
+      "titulo": "acera dañada",
+      "tipo": "cruce_inseguro",
+      "severidad": "critico",
+      "descripcion": "acera bastante dañada y dificulta el paso",
+      "mensaje": "acera dañada: acera bastante dañada y dificulta el paso",
+      "lat": -0.95265,
+      "lng": -80.74502,
+      "coordenadas": [
+        -0.95265,
+        -80.74502
+      ],
+      "confirmaciones": 1,
+      "confianza": 75,
+      "nivel_confianza": "75%",
+      "ultima_actualizacion": "2026-11-24",
+      "id": "obs_4"
     }
   ]
 }

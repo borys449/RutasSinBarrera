@@ -21,12 +21,19 @@ Interfaz web moderna, intuitiva y accesible para el sistema inteligente de rutas
    - Registro de incidencias (roturas, averías de ascensor, obras temporales) con coordenadas geográficas y nivel de severidad.
    - Cálculo del nivel de confianza dinámico mediante confirmaciones comunitarias.
    - Fecha de última actualización visible en cada reporte.
+   - El formulario de publicación y las confirmaciones requieren iniciar sesión; la API también rechaza esas operaciones sin una sesión válida. Explorar rutas y lugares sigue siendo público.
 
-4. **Cartografía Interactiva Ligera (Leaflet)**:
+4. **Cuentas de usuario**:
+   - Registro e inicio de sesión conectados a la API, con sesión mantenida durante la pestaña actual del navegador.
+   - Las contraseñas y sesiones se validan y almacenan en el backend; no se guardan contraseñas en el navegador.
+   - El perfil de movilidad elegido al registrarse se guarda en la cuenta y se puede actualizar desde “Mi Perfil”.
+   - “Mi Perfil” muestra el nombre, correo y perfil de movilidad de la cuenta activa.
+
+5. **Cartografía Interactiva Ligera (Leaflet)**:
    - Marcadores personalizados con iconos SVG accesibles para rampas, ascensores, baños adaptados, zonas de descanso y obstáculos.
    - Trazado de polilíneas accesibles de alto contraste con patrón punteado.
 
-5. **Resiliencia y Modo Offline**:
+6. **Resiliencia y Modo Offline**:
    - Detección automática del estado del backend.
    - Fallback con el punto de referencia del campus y las cuatro entradas registradas en OpenStreetMap. Facultades, biblioteca y accesibilidad de entradas quedan pendientes de verificación.
 
