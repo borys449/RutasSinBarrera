@@ -9,7 +9,7 @@ Interfaz web moderna, intuitiva y accesible para el sistema inteligente de rutas
    - **Escalamiento Tipográfico**: Tamaños de letra ajustables (A- / A+) sin romper el diseño responsive.
    - **Síntesis de Voz (Web Speech API)**: Lectura automática y manual de explicaciones de la IA e instrucciones de navegación paso a paso con resaltado visual del texto en lectura.
    - **Respuesta Háptica (Vibration API)**: Patrones de vibración para alertar sobre la proximidad de barreras críticas a personas con baja visión o ceguera.
-   - **Navegación por Teclado**: Soporte para `:focus-visible`, enlace de salto al contenido (`.skip-link`) y regiones ARIA Live para lectores de pantalla.
+   - **Navegación por Teclado**: Soporte para `:focus-visible`, enlace de salto al contenido (`.skip-link`), flechas/Home/End para cambiar de pestaña y atajos `Alt+1`–`Alt+5`; `?` muestra la ayuda de atajos. Los atajos globales no se activan al escribir en campos.
 
 2. **Cálculo de Rutas con IA Explicativa**:
    - Selección de perfil funcional (Silla de ruedas, Bastón/Andador, Baja visión, Adulto mayor, etc.).

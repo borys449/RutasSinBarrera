@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Inicializar pestañas y navegación accesible
   initTabs();
+  initKeyboardShortcuts();
 
   // Cargar datos iniciales
   await cargarDatosIniciales();
@@ -71,6 +72,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================================================
 
   function initTabs() {
+    tabButtons.forEach((btn) => {
+      btn.tabIndex = btn.getAttribute('aria-selected') === 'true' ? 0 : -1;
+    });
+
     tabButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const targetPanelId = btn.getAttribute('aria-controls');
@@ -81,25 +86,77 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('keydown', (e) => {
         const tabsArray = Array.from(tabButtons);
         const index = tabsArray.indexOf(btn);
+        let nextIndex = null;
 
         if (e.key === 'ArrowRight') {
-          const next = tabsArray[(index + 1) % tabsArray.length];
+          nextIndex = (index + 1) % tabsArray.length;
+        } else if (e.key === 'ArrowLeft') {
+          nextIndex = (index - 1 + tabsArray.length) % tabsArray.length;
+        } else if (e.key === 'Home') {
+          nextIndex = 0;
+        } else if (e.key === 'End') {
+          nextIndex = tabsArray.length - 1;
+        }
+
+        if (nextIndex !== null) {
+          e.preventDefault();
+          const next = tabsArray[nextIndex];
           next.focus();
           activarPestana(next, next.getAttribute('aria-controls'));
-        } else if (e.key === 'ArrowLeft') {
-          const prev = tabsArray[(index - 1 + tabsArray.length) % tabsArray.length];
-          prev.focus();
-          activarPestana(prev, prev.getAttribute('aria-controls'));
         }
       });
+    });
+  }
+
+  function initKeyboardShortcuts() {
+    const dialog = document.getElementById('keyboard-shortcuts-dialog');
+    const openButton = document.getElementById('btn-keyboard-shortcuts');
+    const closeButton = document.getElementById('btn-keyboard-shortcuts-close');
+
+    openButton.addEventListener('click', () => dialog.showModal());
+    closeButton.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        dialog.close();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.defaultPrevented || event.isComposing || event.repeat) return;
+      if (document.querySelector('dialog[open]')) return;
+
+      const target = event.target;
+      const isTyping = target instanceof Element && (
+        target.matches('input, textarea, select, [role="textbox"], [contenteditable="true"]') ||
+        target.isContentEditable
+      );
+      if (isTyping) return;
+
+      if (event.key === '?' && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        dialog.showModal();
+        return;
+      }
+
+      if (!event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) return;
+      const tabIndex = Number(event.key) - 1;
+      if (!Number.isInteger(tabIndex) || tabIndex < 0 || tabIndex >= tabButtons.length) return;
+
+      event.preventDefault();
+      const tab = tabButtons[tabIndex];
+      tab.focus();
+      activarPestana(tab, tab.getAttribute('aria-controls'));
     });
   }
 
   function activarPestana(btnSeleccionado, panelId) {
     tabButtons.forEach(btn => {
       btn.setAttribute('aria-selected', 'false');
+      btn.tabIndex = -1;
     });
     btnSeleccionado.setAttribute('aria-selected', 'true');
+    btnSeleccionado.tabIndex = 0;
 
     tabPanels.forEach(panel => {
       panel.classList.remove('active');

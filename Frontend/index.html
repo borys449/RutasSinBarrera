@@ -68,6 +68,10 @@
         </svg>
         <span class="btn-text-label">Voz</span>
       </button>
+      <button type="button" id="btn-keyboard-shortcuts" class="a11y-btn" aria-label="Mostrar atajos de teclado" aria-haspopup="dialog" aria-controls="keyboard-shortcuts-dialog" title="Atajos de teclado">
+        <span aria-hidden="true">?</span>
+        <span class="btn-text-label">Atajos</span>
+      </button>
       <div class="auth-actions">
         <span id="auth-user-name" class="auth-user-name" hidden></span>
         <button type="button" id="btn-auth-open" class="btn btn-primary btn-sm">Iniciar sesión</button>
@@ -117,6 +121,23 @@
     </p>
   </dialog>
 
+  <dialog id="keyboard-shortcuts-dialog" class="auth-dialog keyboard-shortcuts-dialog" aria-labelledby="keyboard-shortcuts-title">
+    <div class="auth-dialog-header">
+      <h2 id="keyboard-shortcuts-title">Atajos de teclado</h2>
+      <button type="button" id="btn-keyboard-shortcuts-close" class="auth-close" aria-label="Cerrar atajos de teclado">×</button>
+    </div>
+    <p class="auth-dialog-intro">Los atajos de secciones funcionan cuando no estás escribiendo en un campo.</p>
+    <dl class="keyboard-shortcuts-list">
+      <div><dt><kbd>Alt</kbd> + <kbd>1</kbd></dt><dd>Ir a Rutas</dd></div>
+      <div><dt><kbd>Alt</kbd> + <kbd>2</kbd></dt><dd>Ir a Lugares</dd></div>
+      <div><dt><kbd>Alt</kbd> + <kbd>3</kbd></dt><dd>Ir a Reportar</dd></div>
+      <div><dt><kbd>Alt</kbd> + <kbd>4</kbd></dt><dd>Ir a Comunidad</dd></div>
+      <div><dt><kbd>Alt</kbd> + <kbd>5</kbd></dt><dd>Ir a Mi Perfil</dd></div>
+      <div><dt><kbd>?</kbd></dt><dd>Mostrar esta ayuda</dd></div>
+      <div><dt><kbd>Esc</kbd></dt><dd>Cerrar esta ventana</dd></div>
+    </dl>
+  </dialog>
+
   <dialog id="edit-report-dialog" class="auth-dialog report-edit-dialog" aria-labelledby="edit-report-title">
     <div class="auth-dialog-header">
       <h2 id="edit-report-title">Editar reporte</h2>
@@ -158,35 +179,35 @@
       
       <!-- Navegación por Pestañas Accesibles -->
       <div class="tab-navigation" role="tablist" aria-label="Secciones del panel">
-        <button type="button" id="tab-rutas" class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-rutas">
+        <button type="button" id="tab-rutas" class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-rutas" aria-keyshortcuts="Alt+1">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
           </svg>
           <span>Rutas</span>
         </button>
 
-        <button type="button" id="tab-lugares" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-lugares">
+        <button type="button" id="tab-lugares" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-lugares" aria-keyshortcuts="Alt+2">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
           <span>Lugares</span>
         </button>
 
-        <button type="button" id="tab-reportar" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-reportar">
+        <button type="button" id="tab-reportar" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-reportar" aria-keyshortcuts="Alt+3">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
           </svg>
           <span>Reportar</span>
         </button>
 
-        <button type="button" id="tab-reportes" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-reportes">
+        <button type="button" id="tab-reportes" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-reportes" aria-keyshortcuts="Alt+4">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
           </svg>
           <span>Comunidad</span>
         </button>
 
-        <button type="button" id="tab-perfil" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-perfil">
+        <button type="button" id="tab-perfil" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-perfil" aria-keyshortcuts="Alt+5">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
           </svg>
